@@ -8,7 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password@localhost/kickboard_db'
+# 환경 변수에서 데이터베이스 설정 가져오기 (기본값 제공)
+db_username = os.getenv('DB_USERNAME', 'root')
+db_password = os.getenv('DB_PASSWORD', '010519')  # 여기에 실제 비밀번호 입력
+db_host = os.getenv('DB_HOST', 'localhost')
+db_name = os.getenv('DB_NAME', 'kickboard_db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_username}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'your-secret-key-here'
 
@@ -49,7 +55,7 @@ class Report(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, resolved, dismissed
 
 class Usage(db.Model):
-    __tablename__ = 'usage'
+    __tablename__ = 'device_usage'
     id = db.Column(db.Integer, primary_key=True)
     device_id = db.Column(db.String(50), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))

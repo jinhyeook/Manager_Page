@@ -1,5 +1,8 @@
 -- 공유킥보드 관리자 페이지 데이터베이스 설정
 
+-- 기존 데이터베이스 삭제 (재생성용)
+DROP DATABASE IF EXISTS kickboard_db;
+
 -- 데이터베이스 생성
 CREATE DATABASE IF NOT EXISTS kickboard_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -45,7 +48,7 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 
 -- 이용 내역 테이블
-CREATE TABLE IF NOT EXISTS usage (
+CREATE TABLE IF NOT EXISTS device_usage (
     id INT AUTO_INCREMENT PRIMARY KEY,
     device_id VARCHAR(50) NOT NULL,
     user_id INT,
@@ -105,7 +108,7 @@ INSERT INTO reports (device_id, user_id, report_type, description, latitude, lon
 ('K007', 10, 'parking', '비상구 앞에 주차되어 있습니다.', 37.5725, 126.9840, 'pending');
 
 -- 이용 내역 샘플 데이터
-INSERT INTO usage (device_id, user_id, start_time, end_time, distance, duration, cost) VALUES
+INSERT INTO device_usage (device_id, user_id, start_time, end_time, distance, duration, cost) VALUES
 ('K001', 1, '2024-01-15 09:00:00', '2024-01-15 09:15:00', 2.5, 15, 1500),
 ('K002', 2, '2024-01-15 10:30:00', '2024-01-15 10:45:00', 1.8, 15, 1500),
 ('K004', 3, '2024-01-15 11:00:00', '2024-01-15 11:20:00', 3.2, 20, 2000),
@@ -122,9 +125,9 @@ CREATE INDEX idx_devices_status ON devices(status);
 CREATE INDEX idx_devices_battery ON devices(battery_level);
 CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_reports_date ON reports(report_date);
-CREATE INDEX idx_usage_user ON usage(user_id);
-CREATE INDEX idx_usage_device ON usage(device_id);
-CREATE INDEX idx_usage_start_time ON usage(start_time);
+CREATE INDEX idx_usage_user ON device_usage(user_id);
+CREATE INDEX idx_usage_device ON device_usage(device_id);
+CREATE INDEX idx_usage_start_time ON device_usage(start_time);
 
 -- 뷰 생성
 CREATE VIEW device_status_summary AS
