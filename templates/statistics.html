@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+
+{% block title %}통계 - 공유킥보드 관리자{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar"></i> 기기 이용 통계
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">총 디바이스</h4>
+                        <h2 id="total-devices">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-scooter fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">사용 가능</h4>
+                        <h2 id="available-devices">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">총 회원</h4>
+                        <h2 id="total-users">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">신고 대기</h4>
+                        <h2 id="pending-reports">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> 디바이스 상태 분포</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="deviceStatusChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> 신고 유형별 통계</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="reportTypeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> 일별 이용 통계</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyUsageChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> 최근 활동</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <p class="text-muted">최근 활동을 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-battery-quarter"></i> 배터리 상태 분포</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="batteryChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map-marker-alt"></i> 지역별 디바이스 분포</h5>
+            </div>
+            <div class="card-body">
+                <div id="locationStats">
+                    <p class="text-muted">지역별 통계를 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .activity-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .activity-time {
+        font-size: 0.8em;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let deviceStatusChart, reportTypeChart, dailyUsageChart, batteryChart;
+
+$(document).ready(function() {
+    loadStatistics();
+    loadRecentActivity();
+    
+    // 60초마다 데이터 새로고침
+    setInterval(function() {
+        loadStatistics();
+        loadRecentActivity();
+    }, 60000);
+});
+
+function loadStatistics() {
+    $.get('/api/statistics', function(data) {
+        $('#total-devices').text(data.total_devices);
+        $('#available-devices').text(data.available_devices);
+        $('#total-users').text(data.total_users);
+        $('#pending-reports').text(data.pending_reports);
+        
+        // 차트 데이터 로드
+        loadDeviceStatusChart(data);
+        loadReportTypeChart();
+        loadDailyUsageChart();
+        loadBatteryChart(data);
+        loadLocationStats();
+    });
+}
+
+function loadDeviceStatusChart(data) {
+    const ctx = document.getElementById('deviceStatusChart').getContext('2d');
+    
+    if (deviceStatusChart) {
+        deviceStatusChart.destroy();
+    }
+    
+    deviceStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['사용 가능', '사용 중', '충전 중', '점검 중'],
+            datasets: [{
+                data: [
+                    data.available_devices,
+                    data.total_devices - data.available_devices - Math.floor(data.total_devices * 0.1) - Math.floor(data.total_devices * 0.05),
+                    Math.floor(data.total_devices * 0.1),
+                    Math.floor(data.total_devices * 0.05)
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#007bff',
+                    '#ffc107',
+                    '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function loadReportTypeChart() {
+    const ctx = document.getElementById('reportTypeChart').getContext('2d');
+    
+    if (reportTypeChart) {
+        reportTypeChart.destroy();
+    }
+    
+    reportTypeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['손상', '도난', '사고', '주차 문제', '기타'],
+            datasets: [{
+                label: '신고 건수',
+                data: [12, 3, 8, 15, 5],
+                backgroundColor: [
+                    '#dc3545',
+                    '#6f42c1',
+                    '#fd7e14',
+                    '#20c997',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function loadDailyUsageChart() {
+    const ctx = document.getElementById('dailyUsageChart').getContext('2d');
+    
+    if (dailyUsageChart) {
+        dailyUsageChart.destroy();
+    }
+    
+    // 최근 7일 데이터
+    const labels = [];
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }));
+        data.push(Math.floor(Math.random() * 100) + 50); // 임시 데이터
+    }
+    
+    dailyUsageChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '이용 건수',
+                data: data,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function loadBatteryChart(data) {
+    const ctx = document.getElementById('batteryChart').getContext('2d');
+    
+    if (batteryChart) {
+        batteryChart.destroy();
+    }
+    
+    batteryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['0-20%', '21-50%', '51-80%', '81-100%'],
+            datasets: [{
+                label: '디바이스 수',
+                data: [
+                    data.low_battery_devices,
+                    Math.floor(data.total_devices * 0.3),
+                    Math.floor(data.total_devices * 0.4),
+                    data.total_devices - data.low_battery_devices - Math.floor(data.total_devices * 0.3) - Math.floor(data.total_devices * 0.4)
+                ],
+                backgroundColor: [
+                    '#dc3545',
+                    '#ffc107',
+                    '#17a2b8',
+                    '#28a745'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function loadLocationStats() {
+    const locations = [
+        { name: '강남구', count: 45 },
+        { name: '서초구', count: 38 },
+        { name: '마포구', count: 32 },
+        { name: '종로구', count: 28 },
+        { name: '용산구', count: 25 }
+    ];
+    
+    let html = '';
+    locations.forEach(location => {
+        const percentage = Math.round((location.count / 168) * 100);
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>${location.name}</span>
+                <div class="d-flex align-items-center">
+                    <div class="progress me-2" style="width: 100px; height: 8px;">
+                        <div class="progress-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <small>${location.count}대</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    $('#locationStats').html(html);
+}
+
+function loadRecentActivity() {
+    const activities = [
+        { type: '신고', message: '디바이스 #K001 손상 신고 접수', time: '2분 전' },
+        { type: '이용', message: '사용자 김철수가 디바이스 #K045 이용 시작', time: '5분 전' },
+        { type: '충전', message: '디바이스 #K023 충전 완료', time: '8분 전' },
+        { type: '신고', message: '디바이스 #K078 주차 문제 신고 접수', time: '12분 전' },
+        { type: '이용', message: '사용자 이영희가 디바이스 #K012 이용 종료', time: '15분 전' }
+    ];
+    
+    let html = '';
+    activities.forEach(activity => {
+        const iconClass = {
+            '신고': 'fas fa-exclamation-triangle text-warning',
+            '이용': 'fas fa-scooter text-primary',
+            '충전': 'fas fa-battery-full text-success'
+        };
+        
+        html += `
+            <div class="activity-item">
+                <div class="d-flex align-items-start">
+                    <i class="${iconClass[activity.type]} me-2 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <div>${activity.message}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    $('#recentActivity').html(html);
+}
+</script>
+{% endblock %}

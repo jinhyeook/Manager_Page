@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}회원 관리 - 공유킥보드 관리자{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users"></i> 회원 관리
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" placeholder="이름, 이메일, 전화번호로 검색...">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchUsers()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6 text-end">
+        <button class="btn btn-primary" onclick="showAddUserModal()">
+            <i class="fas fa-plus"></i> 새 회원 추가
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> 회원 목록</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>사용자명</th>
+                                <th>이메일</th>
+                                <th>전화번호</th>
+                                <th>가입일</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">회원 목록을 불러오는 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 회원 추가 모달 -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">새 회원 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label class="form-label">사용자명 *</label>
+                        <input type="text" class="form-control" id="newUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">이메일 *</label>
+                        <input type="email" class="form-control" id="newEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">전화번호</label>
+                        <input type="tel" class="form-control" id="newPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">상태</label>
+                        <select class="form-select" id="newStatus">
+                            <option value="active">활성</option>
+                            <option value="suspended">정지</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="addUser()">추가</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 회원 수정 모달 -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">회원 정보 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label class="form-label">사용자명 *</label>
+                        <input type="text" class="form-control" id="editUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">이메일 *</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">전화번호</label>
+                        <input type="tel" class="form-control" id="editPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">상태</label>
+                        <select class="form-select" id="editStatus">
+                            <option value="active">활성</option>
+                            <option value="suspended">정지</option>
+                            <option value="deleted">삭제됨</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="updateUser()">수정</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">회원 삭제 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>정말로 이 회원을 삭제하시겠습니까?</p>
+                <p class="text-danger"><strong>이 작업은 되돌릴 수 없습니다.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteUser()">삭제</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        font-size: 0.8em;
+        padding: 4px 8px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    .action-buttons {
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let users = [];
+let userToDelete = null;
+
+$(document).ready(function() {
+    loadUsers();
+    
+    // 검색 입력 이벤트
+    $('#searchInput').on('keypress', function(e) {
+        if (e.which === 13) {
+            searchUsers();
+        }
+    });
+    
+    // 30초마다 데이터 새로고침
+    setInterval(function() {
+        loadUsers();
+    }, 30000);
+});
+
+function loadUsers() {
+    $.get('/api/users', function(data) {
+        users = data;
+        displayUsers(data);
+    });
+}
+
+function displayUsers(usersData) {
+    let html = '';
+    
+    if (usersData.length === 0) {
+        html = '<tr><td colspan="7" class="text-center text-muted">회원이 없습니다.</td></tr>';
+    } else {
+        usersData.forEach(user => {
+            const statusClass = {
+                'active': 'bg-success',
+                'suspended': 'bg-warning',
+                'deleted': 'bg-secondary'
+            };
+            
+            const statusText = {
+                'active': '활성',
+                'suspended': '정지',
+                'deleted': '삭제됨'
+            };
+            
+            const date = new Date(user.registration_date).toLocaleDateString('ko-KR');
+            
+            html += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${user.phone || '-'}</td>
+                    <td>${date}</td>
+                    <td><span class="badge ${statusClass[user.status]} status-badge">${statusText[user.status]}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal(${user.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmModal(${user.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    $('#usersTableBody').html(html);
+}
+
+function searchUsers() {
+    const searchTerm = $('#searchInput').val().toLowerCase();
+    
+    if (!searchTerm) {
+        displayUsers(users);
+        return;
+    }
+    
+    const filteredUsers = users.filter(user => 
+        user.username.toLowerCase().includes(searchTerm) ||
+        user.email.toLowerCase().includes(searchTerm) ||
+        (user.phone && user.phone.includes(searchTerm))
+    );
+    
+    displayUsers(filteredUsers);
+}
+
+function showAddUserModal() {
+    $('#addUserForm')[0].reset();
+    $('#addUserModal').modal('show');
+}
+
+function addUser() {
+    const username = $('#newUsername').val();
+    const email = $('#newEmail').val();
+    const phone = $('#newPhone').val();
+    const status = $('#newStatus').val();
+    
+    if (!username || !email) {
+        alert('사용자명과 이메일은 필수입니다.');
+        return;
+    }
+    
+    // 실제로는 API 호출로 회원 추가
+    const newUser = {
+        id: users.length + 1,
+        username: username,
+        email: email,
+        phone: phone,
+        status: status,
+        registration_date: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    displayUsers(users);
+    
+    $('#addUserModal').modal('hide');
+    alert('회원이 추가되었습니다.');
+}
+
+function showEditUserModal(userId) {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    
+    $('#editUserId').val(user.id);
+    $('#editUsername').val(user.username);
+    $('#editEmail').val(user.email);
+    $('#editPhone').val(user.phone || '');
+    $('#editStatus').val(user.status);
+    
+    $('#editUserModal').modal('show');
+}
+
+function updateUser() {
+    const userId = parseInt($('#editUserId').val());
+    const username = $('#editUsername').val();
+    const email = $('#editEmail').val();
+    const phone = $('#editPhone').val();
+    const status = $('#editStatus').val();
+    
+    if (!username || !email) {
+        alert('사용자명과 이메일은 필수입니다.');
+        return;
+    }
+    
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) return;
+    
+    // 실제로는 API 호출로 회원 정보 수정
+    users[userIndex] = {
+        ...users[userIndex],
+        username: username,
+        email: email,
+        phone: phone,
+        status: status
+    };
+    
+    displayUsers(users);
+    
+    $('#editUserModal').modal('hide');
+    alert('회원 정보가 수정되었습니다.');
+}
+
+function showDeleteConfirmModal(userId) {
+    userToDelete = userId;
+    $('#deleteConfirmModal').modal('show');
+}
+
+function confirmDeleteUser() {
+    if (!userToDelete) return;
+    
+    const userIndex = users.findIndex(u => u.id === userToDelete);
+    if (userIndex === -1) return;
+    
+    // 실제로는 API 호출로 회원 삭제
+    users[userIndex].status = 'deleted';
+    
+    displayUsers(users);
+    
+    $('#deleteConfirmModal').modal('hide');
+    alert('회원이 삭제되었습니다.');
+    
+    userToDelete = null;
+}
+</script>
+{% endblock %}

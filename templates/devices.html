@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}디바이스 관리 - 공유킥보드 관리자{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-scooter"></i> 디바이스 관리
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-map"></i> 디바이스 위치 지도</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshMap()">
+                        <i class="fas fa-sync-alt"></i> 새로고침
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="map" style="height: 500px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> 디바이스 정보</h5>
+            </div>
+            <div class="card-body">
+                <div id="device-info">
+                    <p class="text-muted">지도에서 디바이스를 선택하세요.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-battery-quarter"></i> 배터리 부족 디바이스</h5>
+            </div>
+            <div class="card-body">
+                <div id="low-battery-list">
+                    <p class="text-muted">배터리 부족 디바이스를 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 디바이스 상세 정보 모달 -->
+<div class="modal fade" id="deviceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">디바이스 상세 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deviceModalBody">
+                <!-- 디바이스 정보가 여기에 표시됩니다 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" onclick="updateDeviceStatus()">상태 업데이트</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .device-marker {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        cursor: pointer;
+    }
+    .battery-low {
+        background-color: #dc3545;
+    }
+    .battery-medium {
+        background-color: #ffc107;
+    }
+    .battery-high {
+        background-color: #28a745;
+    }
+    .device-info-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .device-info-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let map;
+let markers = [];
+let selectedDevice = null;
+
+$(document).ready(function() {
+    initMap();
+    loadLowBatteryDevices();
+    
+    // 30초마다 데이터 새로고침
+    setInterval(function() {
+        refreshMap();
+        loadLowBatteryDevices();
+    }, 30000);
+});
+
+function initMap() {
+    map = L.map('map').setView([37.5665, 126.9780], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    loadDevices();
+}
+
+function loadDevices() {
+    $.get('/api/devices', function(devices) {
+        // 기존 마커 제거
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+        
+        devices.forEach(device => {
+            const batteryColor = device.battery_level > 50 ? 'battery-high' : 
+                               device.battery_level > 20 ? 'battery-medium' : 'battery-low';
+            
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="device-marker ${batteryColor}"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            const marker = L.marker([device.latitude, device.longitude], {icon: icon})
+                .addTo(map);
+            
+            marker.on('click', function() {
+                showDeviceInfo(device);
+            });
+            
+            markers.push(marker);
+        });
+    });
+}
+
+function showDeviceInfo(device) {
+    selectedDevice = device;
+    
+    const batteryStatus = device.battery_level > 50 ? '양호' : 
+                         device.battery_level > 20 ? '주의' : '충전 필요';
+    const batteryClass = device.battery_level > 50 ? 'text-success' : 
+                        device.battery_level > 20 ? 'text-warning' : 'text-danger';
+    
+    const statusText = {
+        'available': '사용 가능',
+        'in_use': '사용 중',
+        'charging': '충전 중',
+        'maintenance': '점검 중'
+    };
+    
+    const html = `
+        <div class="device-info-item">
+            <strong>디바이스 ID:</strong> ${device.device_id}
+        </div>
+        <div class="device-info-item">
+            <strong>위치:</strong> ${device.latitude.toFixed(6)}, ${device.longitude.toFixed(6)}
+        </div>
+        <div class="device-info-item">
+            <strong>배터리:</strong> <span class="${batteryClass}">${device.battery_level}% (${batteryStatus})</span>
+        </div>
+        <div class="device-info-item">
+            <strong>상태:</strong> ${statusText[device.status] || device.status}
+        </div>
+        <div class="device-info-item">
+            <strong>마지막 업데이트:</strong> ${new Date(device.last_updated).toLocaleString('ko-KR')}
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-primary btn-sm" onclick="showDeviceModal('${device.device_id}')">
+                <i class="fas fa-edit"></i> 상세 정보
+            </button>
+        </div>
+    `;
+    
+    $('#device-info').html(html);
+}
+
+function showDeviceModal(deviceId) {
+    $.get(`/api/devices/${deviceId}`, function(device) {
+        const batteryStatus = device.battery_level > 50 ? '양호' : 
+                             device.battery_level > 20 ? '주의' : '충전 필요';
+        const batteryClass = device.battery_level > 50 ? 'text-success' : 
+                            device.battery_level > 20 ? 'text-warning' : 'text-danger';
+        
+        const statusOptions = {
+            'available': '사용 가능',
+            'in_use': '사용 중',
+            'charging': '충전 중',
+            'maintenance': '점검 중'
+        };
+        
+        let statusSelect = '<select class="form-select" id="deviceStatus">';
+        Object.keys(statusOptions).forEach(status => {
+            const selected = status === device.status ? 'selected' : '';
+            statusSelect += `<option value="${status}" ${selected}>${statusOptions[status]}</option>`;
+        });
+        statusSelect += '</select>';
+        
+        const html = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>디바이스 ID</strong></label>
+                        <input type="text" class="form-control" value="${device.device_id}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>위도</strong></label>
+                        <input type="text" class="form-control" value="${device.latitude}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>경도</strong></label>
+                        <input type="text" class="form-control" value="${device.longitude}" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>배터리 레벨</strong></label>
+                        <div class="progress">
+                            <div class="progress-bar ${batteryClass}" style="width: ${device.battery_level}%">
+                                ${device.battery_level}%
+                            </div>
+                        </div>
+                        <small class="${batteryClass}">${batteryStatus}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>상태</strong></label>
+                        ${statusSelect}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>마지막 업데이트</strong></label>
+                        <input type="text" class="form-control" value="${new Date(device.last_updated).toLocaleString('ko-KR')}" readonly>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#deviceModalBody').html(html);
+        $('#deviceModal').modal('show');
+    });
+}
+
+function updateDeviceStatus() {
+    if (!selectedDevice) return;
+    
+    const newStatus = $('#deviceStatus').val();
+    
+    // 실제로는 API 호출로 상태 업데이트
+    console.log(`디바이스 ${selectedDevice.device_id} 상태를 ${newStatus}로 변경`);
+    
+    $('#deviceModal').modal('hide');
+    alert('상태가 업데이트되었습니다.');
+    
+    // 지도 새로고침
+    refreshMap();
+}
+
+function loadLowBatteryDevices() {
+    $.get('/api/devices', function(devices) {
+        const lowBatteryDevices = devices.filter(device => device.battery_level < 20);
+        
+        let html = '';
+        if (lowBatteryDevices.length === 0) {
+            html = '<p class="text-success">배터리 부족 디바이스가 없습니다.</p>';
+        } else {
+            lowBatteryDevices.forEach(device => {
+                html += `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>${device.device_id}</strong>
+                            <span class="text-danger">${device.battery_level}%</span>
+                        </div>
+                        <div class="text-muted small">${device.latitude.toFixed(4)}, ${device.longitude.toFixed(4)}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        $('#low-battery-list').html(html);
+    });
+}
+
+function refreshMap() {
+    loadDevices();
+    loadLowBatteryDevices();
+}
+</script>
+{% endblock %}

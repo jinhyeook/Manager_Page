@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}신고 내역 관리 - 공유킥보드 관리자{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-exclamation-triangle"></i> 신고 내역 관리
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> 신고 내역 목록</h5>
+                <div>
+                    <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                        <option value="">전체 상태</option>
+                        <option value="pending">대기 중</option>
+                        <option value="resolved">해결됨</option>
+                        <option value="dismissed">기각됨</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>신고 ID</th>
+                                <th>디바이스 ID</th>
+                                <th>신고 유형</th>
+                                <th>신고일</th>
+                                <th>상태</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">신고 내역을 불러오는 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-image"></i> 신고 사진</h5>
+            </div>
+            <div class="card-body">
+                <div id="reportImage">
+                    <p class="text-muted">신고를 선택하면 사진이 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-map-marker-alt"></i> 신고 위치</h5>
+            </div>
+            <div class="card-body">
+                <div id="reportLocation">
+                    <p class="text-muted">신고를 선택하면 위치가 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 신고 상세 정보 모달 -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">신고 상세 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="reportModalBody">
+                <!-- 신고 정보가 여기에 표시됩니다 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-success" onclick="updateReportStatus('resolved')">해결됨</button>
+                <button type="button" class="btn btn-warning" onclick="updateReportStatus('dismissed')">기각</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .report-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        font-size: 0.8em;
+        padding: 4px 8px;
+    }
+    .report-location-map {
+        height: 200px;
+        width: 100%;
+        border-radius: 8px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,0.05);
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+let reports = [];
+let selectedReport = null;
+let locationMap = null;
+
+$(document).ready(function() {
+    loadReports();
+    
+    // 상태 필터 변경 이벤트
+    $('#statusFilter').change(function() {
+        filterReports();
+    });
+    
+    // 30초마다 데이터 새로고침
+    setInterval(function() {
+        loadReports();
+    }, 30000);
+});
+
+function loadReports() {
+    $.get('/api/reports', function(data) {
+        reports = data;
+        displayReports(data);
+    });
+}
+
+function displayReports(reportsData) {
+    let html = '';
+    
+    if (reportsData.length === 0) {
+        html = '<tr><td colspan="6" class="text-center text-muted">신고 내역이 없습니다.</td></tr>';
+    } else {
+        reportsData.forEach(report => {
+            const statusClass = {
+                'pending': 'bg-warning',
+                'resolved': 'bg-success',
+                'dismissed': 'bg-secondary'
+            };
+            
+            const statusText = {
+                'pending': '대기 중',
+                'resolved': '해결됨',
+                'dismissed': '기각됨'
+            };
+            
+            const reportTypeText = {
+                'damage': '손상',
+                'theft': '도난',
+                'accident': '사고',
+                'parking': '주차 문제',
+                'other': '기타'
+            };
+            
+            const date = new Date(report.report_date).toLocaleDateString('ko-KR');
+            
+            html += `
+                <tr onclick="showReportDetail(${report.id})">
+                    <td>#${report.id}</td>
+                    <td>${report.device_id}</td>
+                    <td>${reportTypeText[report.report_type] || report.report_type}</td>
+                    <td>${date}</td>
+                    <td><span class="badge ${statusClass[report.status]} status-badge">${statusText[report.status]}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); showReportModal(${report.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    $('#reportsTableBody').html(html);
+}
+
+function filterReports() {
+    const statusFilter = $('#statusFilter').val();
+    let filteredReports = reports;
+    
+    if (statusFilter) {
+        filteredReports = reports.filter(report => report.status === statusFilter);
+    }
+    
+    displayReports(filteredReports);
+}
+
+function showReportDetail(reportId) {
+    const report = reports.find(r => r.id === reportId);
+    if (!report) return;
+    
+    selectedReport = report;
+    
+    // 신고 사진 표시
+    if (report.image_path) {
+        $('#reportImage').html(`
+            <img src="${report.image_path}" alt="신고 사진" class="report-image">
+        `);
+    } else {
+        $('#reportImage').html(`
+            <div class="text-center text-muted">
+                <i class="fas fa-image fa-3x mb-2"></i>
+                <p>사진이 없습니다.</p>
+            </div>
+        `);
+    }
+    
+    // 신고 위치 지도 표시
+    if (report.latitude && report.longitude) {
+        $('#reportLocation').html('<div id="locationMap" class="report-location-map"></div>');
+        
+        // 기존 지도 제거
+        if (locationMap) {
+            locationMap.remove();
+        }
+        
+        // 새 지도 생성
+        setTimeout(() => {
+            locationMap = L.map('locationMap').setView([report.latitude, report.longitude], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(locationMap);
+            
+            L.marker([report.latitude, report.longitude])
+                .bindPopup(`신고 위치<br>${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`)
+                .addTo(locationMap);
+        }, 100);
+    } else {
+        $('#reportLocation').html(`
+            <div class="text-center text-muted">
+                <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
+                <p>위치 정보가 없습니다.</p>
+            </div>
+        `);
+    }
+}
+
+function showReportModal(reportId) {
+    const report = reports.find(r => r.id === reportId);
+    if (!report) return;
+    
+    const reportTypeText = {
+        'damage': '손상',
+        'theft': '도난',
+        'accident': '사고',
+        'parking': '주차 문제',
+        'other': '기타'
+    };
+    
+    const statusText = {
+        'pending': '대기 중',
+        'resolved': '해결됨',
+        'dismissed': '기각됨'
+    };
+    
+    const date = new Date(report.report_date).toLocaleString('ko-KR');
+    
+    const html = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label"><strong>신고 ID</strong></label>
+                    <input type="text" class="form-control" value="#${report.id}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>디바이스 ID</strong></label>
+                    <input type="text" class="form-control" value="${report.device_id}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>신고 유형</strong></label>
+                    <input type="text" class="form-control" value="${reportTypeText[report.report_type] || report.report_type}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>신고일</strong></label>
+                    <input type="text" class="form-control" value="${date}" readonly>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label"><strong>현재 상태</strong></label>
+                    <input type="text" class="form-control" value="${statusText[report.status]}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>위치</strong></label>
+                    <input type="text" class="form-control" value="${report.latitude ? report.latitude.toFixed(6) : 'N/A'}, ${report.longitude ? report.longitude.toFixed(6) : 'N/A'}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>신고자 ID</strong></label>
+                    <input type="text" class="form-control" value="${report.user_id || 'N/A'}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>설명</strong></label>
+                    <textarea class="form-control" rows="3" readonly>${report.description || '설명 없음'}</textarea>
+                </div>
+            </div>
+        </div>
+        ${report.image_path ? `
+        <div class="row mt-3">
+            <div class="col-12">
+                <label class="form-label"><strong>신고 사진</strong></label>
+                <img src="${report.image_path}" alt="신고 사진" class="img-fluid rounded">
+            </div>
+        </div>
+        ` : ''}
+    `;
+    
+    $('#reportModalBody').html(html);
+    $('#reportModal').modal('show');
+}
+
+function updateReportStatus(newStatus) {
+    if (!selectedReport) return;
+    
+    // 실제로는 API 호출로 상태 업데이트
+    console.log(`신고 ${selectedReport.id} 상태를 ${newStatus}로 변경`);
+    
+    // 로컬 상태 업데이트
+    selectedReport.status = newStatus;
+    const reportIndex = reports.findIndex(r => r.id === selectedReport.id);
+    if (reportIndex !== -1) {
+        reports[reportIndex].status = newStatus;
+    }
+    
+    $('#reportModal').modal('hide');
+    alert('상태가 업데이트되었습니다.');
+    
+    // 테이블 새로고침
+    filterReports();
+}
+</script>
+{% endblock %}

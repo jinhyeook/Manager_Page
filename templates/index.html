@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 - 공유킥보드 관리자{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> 관리자 대시보드
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">총 디바이스</h4>
+                        <h2 id="total-devices">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-scooter fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">사용 가능</h4>
+                        <h2 id="available-devices">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">배터리 부족</h4>
+                        <h2 id="low-battery-devices">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-battery-quarter fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">신고 대기</h4>
+                        <h2 id="pending-reports">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map"></i> 디바이스 위치 지도</h5>
+            </div>
+            <div class="card-body">
+                <div id="map" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> 최근 신고 내역</h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-reports">
+                    <p class="text-muted">신고 내역을 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transition: box-shadow 0.15s ease-in-out;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+$(document).ready(function() {
+    // 통계 데이터 로드
+    loadStatistics();
+    loadRecentReports();
+    
+    // 지도 초기화
+    initMap();
+    
+    // 30초마다 데이터 새로고침
+    setInterval(function() {
+        loadStatistics();
+        loadRecentReports();
+    }, 30000);
+});
+
+function loadStatistics() {
+    $.get('/api/statistics', function(data) {
+        $('#total-devices').text(data.total_devices);
+        $('#available-devices').text(data.available_devices);
+        $('#low-battery-devices').text(data.low_battery_devices);
+        $('#pending-reports').text(data.pending_reports);
+    });
+}
+
+function loadRecentReports() {
+    $.get('/api/reports', function(data) {
+        const recentReports = data.slice(0, 5);
+        let html = '';
+        
+        if (recentReports.length === 0) {
+            html = '<p class="text-muted">최근 신고 내역이 없습니다.</p>';
+        } else {
+            recentReports.forEach(report => {
+                const date = new Date(report.report_date).toLocaleDateString('ko-KR');
+                html += `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>${report.report_type}</strong>
+                            <small class="text-muted">${date}</small>
+                        </div>
+                        <div>디바이스: ${report.device_id}</div>
+                        <div class="text-muted small">${report.description || '설명 없음'}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        $('#recent-reports').html(html);
+    });
+}
+
+function initMap() {
+    const map = L.map('map').setView([37.5665, 126.9780], 13); // 서울 중심
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // 디바이스 마커 추가
+    $.get('/api/devices', function(devices) {
+        devices.forEach(device => {
+            const batteryColor = device.battery_level > 50 ? 'green' : 
+                               device.battery_level > 20 ? 'orange' : 'red';
+            
+            const marker = L.marker([device.latitude, device.longitude])
+                .bindPopup(`
+                    <strong>디바이스 ID:</strong> ${device.device_id}<br>
+                    <strong>배터리:</strong> ${device.battery_level}%<br>
+                    <strong>상태:</strong> ${device.status}<br>
+                    <strong>마지막 업데이트:</strong> ${new Date(device.last_updated).toLocaleString('ko-KR')}
+                `)
+                .addTo(map);
+            
+            // 배터리 레벨에 따른 아이콘 색상
+            const icon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color: ${batteryColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            marker.setIcon(icon);
+        });
+    });
+}
+</script>
+{% endblock %}
