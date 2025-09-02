@@ -4,15 +4,16 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from sqlalchemy import text
 
 load_dotenv()
 
 app = Flask(__name__)
 # 환경 변수에서 데이터베이스 설정 가져오기 (기본값 제공)
 db_username = os.getenv('DB_USERNAME', 'root')
-db_password = os.getenv('DB_PASSWORD', '010519')  # 여기에 실제 비밀번호 입력
+db_password = os.getenv('DB_PASSWORD', '010519')
 db_host = os.getenv('DB_HOST', 'localhost')
-db_name = os.getenv('DB_NAME', 'kickboard_db')
+db_name = os.getenv('DB_NAME', 'kick')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_username}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -20,50 +21,6 @@ app.secret_key = 'your-secret-key-here'
 
 db = SQLAlchemy(app)
 CORS(app)
-
-# 데이터베이스 모델 정의
-class Device(db.Model):
-    __tablename__ = 'devices'
-    id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(50), unique=True, nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    battery_level = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='available')  # available, in_use, charging, maintenance
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
-
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    phone = db.Column(db.String(20))
-    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='active')  # active, suspended, deleted
-
-class Report(db.Model):
-    __tablename__ = 'reports'
-    id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(50), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    report_type = db.Column(db.String(50), nullable=False)  # damage, theft, accident, etc.
-    description = db.Column(db.Text)
-    image_path = db.Column(db.String(255))
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    report_date = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='pending')  # pending, resolved, dismissed
-
-class Usage(db.Model):
-    __tablename__ = 'device_usage'
-    id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(50), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime)
-    distance = db.Column(db.Float)  # km
-    duration = db.Column(db.Integer)  # minutes
-    cost = db.Column(db.Float)
 
 # 라우트 정의
 @app.route('/')
@@ -86,83 +43,148 @@ def users():
 def statistics():
     return render_template('statistics.html')
 
-# API 엔드포인트
+# API 엔드포인트 (rAider 스키마 매핑)
 @app.route('/api/devices')
 def get_devices():
-    devices = Device.query.all()
-    return jsonify([{
-        'id': device.id,
-        'device_id': device.device_id,
-        'latitude': device.latitude,
-        'longitude': device.longitude,
-        'battery_level': device.battery_level,
-        'status': device.status,
-        'last_updated': device.last_updated.isoformat()
-    } for device in devices])
+    sql = text(
+        """
+        SELECT 
+            DEVICE_CODE,
+            ST_Y(location) AS latitude,
+            ST_X(location) AS longitude,
+            battery_level,
+            IF(is_used = 1, 'in_use', 'available') AS status,
+            created_at
+        FROM DEVICE_INFO
+        """
+    )
+    rows = db.session.execute(sql).mappings().all()
+    # 프론트 호환: id는 일련번호로 제공
+    result = []
+    for idx, r in enumerate(rows, start=1):
+        result.append({
+            'id': idx,
+            'device_id': r['DEVICE_CODE'],
+            'latitude': float(r['latitude']) if r['latitude'] is not None else None,
+            'longitude': float(r['longitude']) if r['longitude'] is not None else None,
+            'battery_level': r['battery_level'],
+            'status': r['status'],
+            'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+        })
+    return jsonify(result)
 
 @app.route('/api/devices/<device_id>')
 def get_device(device_id):
-    device = Device.query.filter_by(device_id=device_id).first()
-    if device:
-        return jsonify({
-            'id': device.id,
-            'device_id': device.device_id,
-            'latitude': device.latitude,
-            'longitude': device.longitude,
-            'battery_level': device.battery_level,
-            'status': device.status,
-            'last_updated': device.last_updated.isoformat()
-        })
-    return jsonify({'error': 'Device not found'}), 404
+    sql = text(
+        """
+        SELECT 
+            DEVICE_CODE,
+            ST_Y(location) AS latitude,
+            ST_X(location) AS longitude,
+            battery_level,
+            IF(is_used = 1, 'in_use', 'available') AS status,
+            created_at
+        FROM DEVICE_INFO
+        WHERE DEVICE_CODE = :device_code
+        """
+    )
+    r = db.session.execute(sql, { 'device_code': device_id }).mappings().first()
+    if not r:
+        return jsonify({'error': 'Device not found'}), 404
+    return jsonify({
+        'id': 1,
+        'device_id': r['DEVICE_CODE'],
+        'latitude': float(r['latitude']) if r['latitude'] is not None else None,
+        'longitude': float(r['longitude']) if r['longitude'] is not None else None,
+        'battery_level': r['battery_level'],
+        'status': r['status'],
+        'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+    })
 
 @app.route('/api/reports')
 def get_reports():
-    reports = Report.query.all()
-    return jsonify([{
-        'id': report.id,
-        'device_id': report.device_id,
-        'user_id': report.user_id,
-        'report_type': report.report_type,
-        'description': report.description,
-        'image_path': report.image_path,
-        'latitude': report.latitude,
-        'longitude': report.longitude,
-        'report_date': report.report_date.isoformat(),
-        'status': report.status
-    } for report in reports])
+    sql = text(
+        """
+        SELECT 
+            REPORTED_DEVICE_CODE AS device_id,
+            REPORTER_USER_ID AS reporter_user_id,
+            REPORTED_USER_ID AS reported_user_id,
+            ST_Y(COALESCE(reported_loc, reporter_loc)) AS latitude,
+            ST_X(COALESCE(reported_loc, reporter_loc)) AS longitude,
+            report_time,
+            is_verified
+        FROM REPORT_LOG
+        ORDER BY report_time DESC
+        """
+    )
+    rows = db.session.execute(sql).mappings().all()
+    result = []
+    for idx, r in enumerate(rows, start=1):
+        status = 'pending' if r['is_verified'] is None else ('resolved' if r['is_verified'] == 1 else 'dismissed')
+        result.append({
+            'id': idx,
+            'device_id': r['device_id'],
+            'user_id': r['reporter_user_id'],
+            'report_type': 'other',
+            'description': '',
+            'image_path': None,
+            'latitude': float(r['latitude']) if r['latitude'] is not None else None,
+            'longitude': float(r['longitude']) if r['longitude'] is not None else None,
+            'report_date': r['report_time'].isoformat() if r['report_time'] else None,
+            'status': status
+        })
+    return jsonify(result)
 
 @app.route('/api/users')
 def get_users():
-    users = User.query.all()
-    return jsonify([{
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'phone': user.phone,
-        'registration_date': user.registration_date.isoformat(),
-        'status': user.status
-    } for user in users])
+    sql = text(
+        """
+        SELECT 
+            USER_ID,
+            name,
+            email,
+            phone,
+            sign_up_date
+        FROM USER_INFO
+        ORDER BY sign_up_date DESC
+        """
+    )
+    rows = db.session.execute(sql).mappings().all()
+    result = []
+    for idx, r in enumerate(rows, start=1):
+        result.append({
+            'id': idx,
+            'username': r['name'],
+            'email': r['email'],
+            'phone': r['phone'],
+            'registration_date': datetime.combine(r['sign_up_date'], datetime.min.time()).isoformat() if r['sign_up_date'] else None,
+            'status': 'active'
+        })
+    return jsonify(result)
 
 @app.route('/api/statistics')
 def get_statistics():
-    # 기본 통계 데이터
-    total_devices = Device.query.count()
-    available_devices = Device.query.filter_by(status='available').count()
-    low_battery_devices = Device.query.filter(Device.battery_level < 20).count()
-    total_users = User.query.count()
-    total_reports = Report.query.count()
-    pending_reports = Report.query.filter_by(status='pending').count()
-    
+    counts_sql = text("SELECT COUNT(*) AS cnt FROM DEVICE_INFO")
+    total_devices = db.session.execute(counts_sql).scalar()
+
+    available_sql = text("SELECT COUNT(*) FROM DEVICE_INFO WHERE IFNULL(is_used,0) = 0")
+    available_devices = db.session.execute(available_sql).scalar()
+
+    low_batt_sql = text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level < 20")
+    low_battery_devices = db.session.execute(low_batt_sql).scalar()
+
+    total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO")).scalar()
+    total_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG")).scalar()
+    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified IS NULL")).scalar()
+
     return jsonify({
-        'total_devices': total_devices,
-        'available_devices': available_devices,
-        'low_battery_devices': low_battery_devices,
-        'total_users': total_users,
-        'total_reports': total_reports,
-        'pending_reports': pending_reports
+        'total_devices': int(total_devices or 0),
+        'available_devices': int(available_devices or 0),
+        'low_battery_devices': int(low_battery_devices or 0),
+        'total_users': int(total_users or 0),
+        'total_reports': int(total_reports or 0),
+        'pending_reports': int(pending_reports or 0)
     })
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
