@@ -1,6 +1,5 @@
 -- rAider_table_sql.sql 기반 스키마 (MySQL)
 
-DROP DATABASE IF EXISTS kick;
 CREATE DATABASE kick CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE kick;
 
