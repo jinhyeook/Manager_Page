@@ -155,22 +155,25 @@ def get_users():
             name,
             email,
             phone,
-            sign_up_date
+            sign_up_date,
+            is_delete
         FROM USER_INFO
         ORDER BY sign_up_date DESC
         """
     )
     rows = db.session.execute(sql).mappings().all()
     result = []
-    for idx, r in enumerate(rows, start=1):
+    for r in rows:
+        # is_delete 값에 따른 상태 설정
+        status = 'deleted' if r['is_delete'] == 1 else 'active'
+        
         result.append({
-            'id': idx,
-            'USER_ID': r['USER_ID'],  # 실제 USER_ID 추가
+            'USER_ID': r['USER_ID'],
             'username': r['name'],
             'email': r['email'],
             'phone': r['phone'],
             'registration_date': datetime.combine(r['sign_up_date'], datetime.min.time()).isoformat() if r['sign_up_date'] else None,
-            'status': 'active'
+            'status': status
         })
     return jsonify(result)
 
@@ -180,10 +183,13 @@ def update_user(user_id):
     print(f"회원 수정 요청: user_id={user_id}, data={data}")
     
     try:
+        # 상태에 따른 is_delete 값 설정
+        is_delete = 1 if data.get('status') == 'deleted' else 0
+        
         sql = text(
             """
             UPDATE USER_INFO 
-            SET name = :name, email = :email, phone = :phone
+            SET name = :name, email = :email, phone = :phone, is_delete = :is_delete
             WHERE USER_ID = :user_id
             """
         )
@@ -191,6 +197,7 @@ def update_user(user_id):
             'name': data['username'],
             'email': data['email'], 
             'phone': data['phone'],
+            'is_delete': is_delete,
             'user_id': user_id
         }
         print(f"SQL 실행 파라미터: {params}")
@@ -232,10 +239,13 @@ def create_user():
         import uuid
         user_id = f"user{uuid.uuid4().hex[:8]}"
         
+        # 상태에 따른 is_delete 값 설정
+        is_delete = 1 if data.get('status') == 'deleted' else 0
+        
         sql = text(
             """
-            INSERT INTO USER_INFO (USER_ID, name, email, phone, birth, sex)
-            VALUES (:user_id, :name, :email, :phone, :birth, :sex)
+            INSERT INTO USER_INFO (USER_ID, name, email, phone, birth, sex, is_delete)
+            VALUES (:user_id, :name, :email, :phone, :birth, :sex, :is_delete)
             """
         )
         result = db.session.execute(sql, {
@@ -244,7 +254,8 @@ def create_user():
             'email': data['email'],
             'phone': data['phone'],
             'birth': '1990-01-01',  # 기본값
-            'sex': 'M'  # 기본값
+            'sex': 'M',  # 기본값
+            'is_delete': is_delete
         })
         db.session.commit()
         return jsonify({'message': '회원이 생성되었습니다.', 'user_id': user_id}), 201
@@ -252,50 +263,7 @@ def create_user():
         db.session.rollback()
         return jsonify({'error': f'생성 중 오류가 발생했습니다: {str(e)}'}), 500
 
-# 디바이스 상태 업데이트 API
-@app.route('/api/devices/<device_id>/status', methods=['PUT'])
-def update_device_status(device_id):
-    data = request.get_json()
-    print(f"디바이스 상태 업데이트 요청: device_id={device_id}, data={data}")
-    
-    try:
-        # 상태별 is_used 값 매핑
-        status_mapping = {
-            'available': 0,      # 사용 가능
-            'in_use': 1,         # 사용 중
-            'charging': 0,       # 충전 중 (사용 불가)
-            'maintenance': 0     # 점검 중 (사용 불가)
-        }
-        
-        is_used = status_mapping.get(data['status'], 0)
-        print(f"상태 매핑: {data['status']} -> is_used={is_used}")
-        
-        sql = text(
-            """
-            UPDATE DEVICE_INFO 
-            SET is_used = :is_used
-            WHERE DEVICE_CODE = :device_code
-            """
-        )
-        params = {
-            'is_used': is_used,
-            'device_code': device_id
-        }
-        print(f"SQL 실행 파라미터: {params}")
-        
-        result = db.session.execute(sql, params)
-        db.session.commit()
-        
-        print(f"업데이트 결과: rowcount={result.rowcount}")
-        
-        if result.rowcount > 0:
-            return jsonify({'message': '디바이스 상태가 업데이트되었습니다.'})
-        else:
-            return jsonify({'error': '디바이스를 찾을 수 없습니다.'}), 404
-    except Exception as e:
-        print(f"디바이스 상태 업데이트 중 오류: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': f'상태 업데이트 중 오류가 발생했습니다: {str(e)}'}), 500
+
 
 # 신고 상태 업데이트 API
 @app.route('/api/reports/<report_id>/status', methods=['PUT'])
@@ -332,26 +300,159 @@ def update_report_status(report_id):
 
 @app.route('/api/statistics')
 def get_statistics():
-    counts_sql = text("SELECT COUNT(*) AS cnt FROM DEVICE_INFO")
-    total_devices = db.session.execute(counts_sql).scalar()
-
-    available_sql = text("SELECT COUNT(*) FROM DEVICE_INFO WHERE IFNULL(is_used,0) = 0")
-    available_devices = db.session.execute(available_sql).scalar()
-
-    low_batt_sql = text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level < 20")
-    low_battery_devices = db.session.execute(low_batt_sql).scalar()
-
-    total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO")).scalar()
+    # 디바이스 상태 통계
+    device_status_sql = text("""
+        SELECT 
+            CASE 
+                WHEN is_used = 1 THEN '사용 중'
+                ELSE '사용 가능'
+            END as status,
+            COUNT(*) as count
+        FROM DEVICE_INFO 
+        GROUP BY is_used
+    """)
+    device_status = db.session.execute(device_status_sql).mappings().all()
+    
+    # 배터리 레벨 통계 (10% 단위로 그룹화)
+    battery_sql = text("""
+        SELECT 
+            CASE 
+                WHEN battery_level < 10 THEN '0-9%'
+                WHEN battery_level < 20 THEN '10-19%'
+                WHEN battery_level < 30 THEN '20-29%'
+                WHEN battery_level < 40 THEN '30-39%'
+                WHEN battery_level < 50 THEN '40-49%'
+                WHEN battery_level < 60 THEN '50-59%'
+                WHEN battery_level < 70 THEN '60-69%'
+                WHEN battery_level < 80 THEN '70-79%'
+                WHEN battery_level < 90 THEN '80-89%'
+                ELSE '90-100%'
+            END as battery_range,
+            COUNT(*) as count
+        FROM DEVICE_INFO 
+        GROUP BY 
+            CASE 
+                WHEN battery_level < 10 THEN '0-9%'
+                WHEN battery_level < 20 THEN '10-19%'
+                WHEN battery_level < 30 THEN '20-29%'
+                WHEN battery_level < 40 THEN '30-39%'
+                WHEN battery_level < 50 THEN '40-49%'
+                WHEN battery_level < 60 THEN '50-59%'
+                WHEN battery_level < 70 THEN '60-69%'
+                WHEN battery_level < 80 THEN '70-79%'
+                WHEN battery_level < 90 THEN '80-89%'
+                ELSE '90-100%'
+            END
+        ORDER BY battery_range
+    """)
+    battery_stats = db.session.execute(battery_sql).mappings().all()
+    
+    # 성별 통계
+    gender_sql = text("""
+        SELECT 
+            CASE 
+                WHEN sex = 'M' THEN '남성'
+                WHEN sex = 'F' THEN '여성'
+                ELSE '기타'
+            END as gender,
+            COUNT(*) as count
+        FROM USER_INFO 
+        WHERE is_delete = 0
+        GROUP BY sex
+    """)
+    gender_stats = db.session.execute(gender_sql).mappings().all()
+    
+    # 나이대별 통계
+    age_sql = text("""
+        SELECT 
+            CASE 
+                WHEN age < 20 THEN '10대'
+                WHEN age < 30 THEN '20대'
+                WHEN age < 40 THEN '30대'
+                WHEN age < 50 THEN '40대'
+                WHEN age < 60 THEN '50대'
+                WHEN age < 70 THEN '60대'
+                ELSE '70대 이상'
+            END as age_group,
+            COUNT(*) as count
+        FROM USER_INFO 
+        WHERE is_delete = 0 AND age IS NOT NULL
+        GROUP BY 
+            CASE 
+                WHEN age < 20 THEN '10대'
+                WHEN age < 30 THEN '20대'
+                WHEN age < 40 THEN '30대'
+                WHEN age < 50 THEN '40대'
+                WHEN age < 60 THEN '50대'
+                WHEN age < 70 THEN '60대'
+                ELSE '70대 이상'
+            END
+        ORDER BY 
+            CASE age_group
+                WHEN '10대' THEN 1
+                WHEN '20대' THEN 2
+                WHEN '30대' THEN 3
+                WHEN '40대' THEN 4
+                WHEN '50대' THEN 5
+                WHEN '60대' THEN 6
+                ELSE 7
+            END
+    """)
+    age_stats = db.session.execute(age_sql).mappings().all()
+    
+    # 지역별 디바이스 통계 (서울시 주요 구역 기준)
+    location_sql = text("""
+        SELECT 
+            CASE 
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.565 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '강남구'
+                WHEN ST_Y(location) BETWEEN 37.465 AND 37.495 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '서초구'
+                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '마포구'
+                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '종로구'
+                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '용산구'
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '영등포구'
+                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '성동구'
+                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '광진구'
+                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '중구'
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '송파구'
+                ELSE '기타 지역'
+            END as district,
+            COUNT(*) as count
+        FROM DEVICE_INFO 
+        WHERE location IS NOT NULL
+        GROUP BY 
+            CASE 
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.565 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '강남구'
+                WHEN ST_Y(location) BETWEEN 37.465 AND 37.495 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '서초구'
+                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '마포구'
+                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '종로구'
+                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '용산구'
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '영등포구'
+                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '성동구'
+                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '광진구'
+                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '중구'
+                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '송파구'
+                ELSE '기타 지역'
+            END
+        ORDER BY count DESC
+    """)
+    location_stats = db.session.execute(location_sql).mappings().all()
+    
+    # 전체 요약 통계
+    total_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO")).scalar()
+    total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO WHERE is_delete = 0")).scalar()
     total_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG")).scalar()
-    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified IS NULL")).scalar()
-
+    
     return jsonify({
-        'total_devices': int(total_devices or 0),
-        'available_devices': int(available_devices or 0),
-        'low_battery_devices': int(low_battery_devices or 0),
-        'total_users': int(total_users or 0),
-        'total_reports': int(total_reports or 0),
-        'pending_reports': int(pending_reports or 0)
+        'device_status': [dict(row) for row in device_status],
+        'battery_stats': [dict(row) for row in battery_stats],
+        'gender_stats': [dict(row) for row in gender_stats],
+        'age_stats': [dict(row) for row in age_stats],
+        'location_stats': [dict(row) for row in location_stats],
+        'summary': {
+            'total_devices': int(total_devices or 0),
+            'total_users': int(total_users or 0),
+            'total_reports': int(total_reports or 0)
+        }
     })
 
 if __name__ == '__main__':

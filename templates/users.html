@@ -84,8 +84,8 @@
                     <div class="mb-3">
                         <label class="form-label">상태</label>
                         <select class="form-select" id="newStatus">
-                            <option value="active">활성</option>
-                            <option value="suspended">정지</option>
+                            <option value="active">활성화</option>
+                            <option value="deleted">삭제</option>
                         </select>
                     </div>
                 </form>
@@ -124,9 +124,8 @@
                     <div class="mb-3">
                         <label class="form-label">상태</label>
                         <select class="form-select" id="editStatus">
-                            <option value="active">활성</option>
-                            <option value="suspended">정지</option>
-                            <option value="deleted">삭제됨</option>
+                            <option value="active">활성화</option>
+                            <option value="deleted">삭제</option>
                         </select>
                     </div>
                 </form>
@@ -212,31 +211,29 @@ function displayUsers(usersData) {
         usersData.forEach(user => {
             const statusClass = {
                 'active': 'bg-success',
-                'suspended': 'bg-warning',
                 'deleted': 'bg-secondary'
             };
             
             const statusText = {
-                'active': '활성',
-                'suspended': '정지',
-                'deleted': '삭제됨'
+                'active': '활성화',
+                'deleted': '삭제'
             };
             
             const date = new Date(user.registration_date).toLocaleDateString('ko-KR');
             
             html += `
                 <tr>
-                    <td>${user.id}</td>
+                    <td>${user.USER_ID}</td>
                     <td>${user.username}</td>
                     <td>${user.email}</td>
                     <td>${user.phone || '-'}</td>
                     <td>${date}</td>
                     <td><span class="badge ${statusClass[user.status]} status-badge">${statusText[user.status]}</span></td>
                     <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal('${user.USER_ID || user.id}')">
+                        <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal('${user.USER_ID}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmModal('${user.USER_ID || user.id}')">
+                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmModal('${user.USER_ID}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -337,7 +334,8 @@ function updateUser() {
     const requestData = {
         username: username,
         email: email,
-        phone: phone
+        phone: phone,
+        status: status
     };
     console.log('요청 데이터:', requestData);
     
