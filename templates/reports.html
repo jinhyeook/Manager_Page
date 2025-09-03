@@ -334,21 +334,24 @@ function showReportModal(reportId) {
 function updateReportStatus(newStatus) {
     if (!selectedReport) return;
     
-    // 실제로는 API 호출로 상태 업데이트
-    console.log(`신고 ${selectedReport.id} 상태를 ${newStatus}로 변경`);
-    
-    // 로컬 상태 업데이트
-    selectedReport.status = newStatus;
-    const reportIndex = reports.findIndex(r => r.id === selectedReport.id);
-    if (reportIndex !== -1) {
-        reports[reportIndex].status = newStatus;
-    }
-    
-    $('#reportModal').modal('hide');
-    alert('상태가 업데이트되었습니다.');
-    
-    // 테이블 새로고침
-    filterReports();
+    // API 호출로 상태 업데이트
+    $.ajax({
+        url: `/api/reports/${selectedReport.device_id}/status`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            status: newStatus
+        }),
+        success: function(response) {
+            $('#reportModal').modal('hide');
+            alert('상태가 업데이트되었습니다.');
+            loadReports(); // 신고 목록 새로고침
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON ? xhr.responseJSON.error : '상태 업데이트 중 오류가 발생했습니다.';
+            alert('오류: ' + error);
+        }
+    });
 }
 </script>
 {% endblock %}

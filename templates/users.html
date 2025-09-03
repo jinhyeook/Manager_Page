@@ -233,10 +233,10 @@ function displayUsers(usersData) {
                     <td>${date}</td>
                     <td><span class="badge ${statusClass[user.status]} status-badge">${statusText[user.status]}</span></td>
                     <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal(${user.id})">
+                        <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal('${user.USER_ID || user.id}')">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmModal(${user.id})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmModal('${user.USER_ID || user.id}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -281,28 +281,33 @@ function addUser() {
         return;
     }
     
-    // 실제로는 API 호출로 회원 추가
-    const newUser = {
-        id: users.length + 1,
-        username: username,
-        email: email,
-        phone: phone,
-        status: status,
-        registration_date: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    displayUsers(users);
-    
-    $('#addUserModal').modal('hide');
-    alert('회원이 추가되었습니다.');
+    // API 호출로 회원 추가
+    $.ajax({
+        url: '/api/users',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            username: username,
+            email: email,
+            phone: phone
+        }),
+        success: function(response) {
+            $('#addUserModal').modal('hide');
+            alert('회원이 추가되었습니다.');
+            loadUsers(); // 목록 새로고침
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON ? xhr.responseJSON.error : '회원 추가 중 오류가 발생했습니다.';
+            alert('오류: ' + error);
+        }
+    });
 }
 
 function showEditUserModal(userId) {
-    const user = users.find(u => u.id === userId);
+    const user = users.find(u => u.USER_ID === userId);
     if (!user) return;
     
-    $('#editUserId').val(user.id);
+    $('#editUserId').val(user.USER_ID);
     $('#editUsername').val(user.username);
     $('#editEmail').val(user.email);
     $('#editPhone').val(user.phone || '');
@@ -312,33 +317,48 @@ function showEditUserModal(userId) {
 }
 
 function updateUser() {
-    const userId = parseInt($('#editUserId').val());
+    const userId = $('#editUserId').val();
     const username = $('#editUsername').val();
     const email = $('#editEmail').val();
     const phone = $('#editPhone').val();
     const status = $('#editStatus').val();
+    
+    console.log('updateUser 호출됨');
+    console.log('userId:', userId);
+    console.log('username:', username);
+    console.log('email:', email);
+    console.log('phone:', phone);
     
     if (!username || !email) {
         alert('사용자명과 이메일은 필수입니다.');
         return;
     }
     
-    const userIndex = users.findIndex(u => u.id === userId);
-    if (userIndex === -1) return;
-    
-    // 실제로는 API 호출로 회원 정보 수정
-    users[userIndex] = {
-        ...users[userIndex],
+    const requestData = {
         username: username,
         email: email,
-        phone: phone,
-        status: status
+        phone: phone
     };
+    console.log('요청 데이터:', requestData);
     
-    displayUsers(users);
-    
-    $('#editUserModal').modal('hide');
-    alert('회원 정보가 수정되었습니다.');
+    // API 호출로 회원 정보 수정
+    $.ajax({
+        url: `/api/users/${userId}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        success: function(response) {
+            console.log('성공 응답:', response);
+            $('#editUserModal').modal('hide');
+            alert('회원 정보가 수정되었습니다.');
+            loadUsers(); // 목록 새로고침
+        },
+        error: function(xhr) {
+            console.error('에러 응답:', xhr);
+            const error = xhr.responseJSON ? xhr.responseJSON.error : '회원 정보 수정 중 오류가 발생했습니다.';
+            alert('오류: ' + error);
+        }
+    });
 }
 
 function showDeleteConfirmModal(userId) {
@@ -349,18 +369,21 @@ function showDeleteConfirmModal(userId) {
 function confirmDeleteUser() {
     if (!userToDelete) return;
     
-    const userIndex = users.findIndex(u => u.id === userToDelete);
-    if (userIndex === -1) return;
-    
-    // 실제로는 API 호출로 회원 삭제
-    users[userIndex].status = 'deleted';
-    
-    displayUsers(users);
-    
-    $('#deleteConfirmModal').modal('hide');
-    alert('회원이 삭제되었습니다.');
-    
-    userToDelete = null;
+    // API 호출로 회원 삭제
+    $.ajax({
+        url: `/api/users/${userToDelete}`,
+        method: 'DELETE',
+        success: function(response) {
+            $('#deleteConfirmModal').modal('hide');
+            alert('회원이 삭제되었습니다.');
+            loadUsers(); // 목록 새로고침
+            userToDelete = null;
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON ? xhr.responseJSON.error : '회원 삭제 중 오류가 발생했습니다.';
+            alert('오류: ' + error);
+        }
+    });
 }
 </script>
 {% endblock %}

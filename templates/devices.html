@@ -200,7 +200,13 @@ function showDeviceInfo(device) {
 }
 
 function showDeviceModal(deviceId) {
+    console.log('showDeviceModal 호출됨, deviceId:', deviceId);
     $.get(`/api/devices/${deviceId}`, function(device) {
+        console.log('API 응답 받음:', device);
+        // selectedDevice 변수 설정
+        selectedDevice = device;
+        console.log('selectedDevice 설정됨:', selectedDevice);
+        
         const batteryStatus = device.battery_level > 50 ? '양호' : 
                              device.battery_level > 20 ? '주의' : '충전 필요';
         const batteryClass = device.battery_level > 50 ? 'text-success' : 
@@ -264,18 +270,38 @@ function showDeviceModal(deviceId) {
 }
 
 function updateDeviceStatus() {
-    if (!selectedDevice) return;
+    console.log('updateDeviceStatus 호출됨');
+    console.log('selectedDevice:', selectedDevice);
+    
+    if (!selectedDevice) {
+        alert('선택된 디바이스가 없습니다.');
+        return;
+    }
     
     const newStatus = $('#deviceStatus').val();
+    console.log('새로운 상태:', newStatus);
+    console.log('디바이스 ID:', selectedDevice.device_id);
     
-    // 실제로는 API 호출로 상태 업데이트
-    console.log(`디바이스 ${selectedDevice.device_id} 상태를 ${newStatus}로 변경`);
-    
-    $('#deviceModal').modal('hide');
-    alert('상태가 업데이트되었습니다.');
-    
-    // 지도 새로고침
-    refreshMap();
+    // API 호출로 상태 업데이트
+    $.ajax({
+        url: `/api/devices/${selectedDevice.device_id}/status`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            status: newStatus
+        }),
+        success: function(response) {
+            console.log('성공 응답:', response);
+            $('#deviceModal').modal('hide');
+            alert('상태가 업데이트되었습니다.');
+            refreshMap(); // 지도 새로고침
+        },
+        error: function(xhr) {
+            console.error('에러 응답:', xhr);
+            const error = xhr.responseJSON ? xhr.responseJSON.error : '상태 업데이트 중 오류가 발생했습니다.';
+            alert('오류: ' + error);
+        }
+    });
 }
 
 function loadLowBatteryDevices() {
