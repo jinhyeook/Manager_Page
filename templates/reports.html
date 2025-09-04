@@ -19,9 +19,8 @@
                 <div>
                     <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
                         <option value="">전체 상태</option>
-                        <option value="pending">대기 중</option>
                         <option value="resolved">해결됨</option>
-                        <option value="dismissed">기각됨</option>
+                        <option value="dismissed">해결 대기 중</option>
                     </select>
                 </div>
             </div>
@@ -87,7 +86,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 <button type="button" class="btn btn-success" onclick="updateReportStatus('resolved')">해결됨</button>
-                <button type="button" class="btn btn-warning" onclick="updateReportStatus('dismissed')">기각</button>
+                <button type="button" class="btn btn-warning" onclick="updateReportStatus('dismissed')">해결 대기 중</button>
             </div>
         </div>
     </div>
@@ -161,9 +160,9 @@ function displayReports(reportsData) {
             };
             
             const statusText = {
-                'pending': '대기 중',
+                'pending': '해결 대기 중',
                 'resolved': '해결됨',
-                'dismissed': '기각됨'
+                'dismissed': '해결 대기 중'
             };
             
             const reportTypeText = {

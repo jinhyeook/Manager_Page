@@ -131,7 +131,7 @@ def get_reports():
     rows = db.session.execute(sql).mappings().all()
     result = []
     for idx, r in enumerate(rows, start=1):
-        status = 'pending' if r['is_verified'] is None else ('resolved' if r['is_verified'] == 1 else 'dismissed')
+        status = 'dismissed' if r['is_verified'] is None else ('resolved' if r['is_verified'] == 1 else 'dismissed')
         result.append({
             'id': idx,
             'device_id': r['device_id'],
@@ -270,12 +270,12 @@ def create_user():
 def update_report_status(report_id):
     data = request.get_json()
     try:
-        # is_verified: NULL=pending, 1=resolved, 0=dismissed
+        # is_verified: NULL=dismissed(해결 대기 중), 1=resolved, 0=dismissed(해결 대기 중)
         is_verified = None
         if data['status'] == 'resolved':
             is_verified = 1
         elif data['status'] == 'dismissed':
-            is_verified = 0
+            is_verified = None  # 해결 대기 중으로 설정
         
         sql = text(
             """
@@ -439,6 +439,9 @@ def get_statistics():
     
     # 전체 요약 통계
     total_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO")).scalar()
+    available_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE is_used = 0")).scalar()
+    low_battery_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level <= 20")).scalar()
+    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified IS NULL")).scalar()
     total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO WHERE is_delete = 0")).scalar()
     total_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG")).scalar()
     
@@ -452,7 +455,12 @@ def get_statistics():
             'total_devices': int(total_devices or 0),
             'total_users': int(total_users or 0),
             'total_reports': int(total_reports or 0)
-        }
+        },
+        # 대시보드용 개별 통계
+        'total_devices': int(total_devices or 0),
+        'available_devices': int(available_devices or 0),
+        'low_battery_devices': int(low_battery_devices or 0),
+        'pending_reports': int(pending_reports or 0)
     })
 
 if __name__ == '__main__':
