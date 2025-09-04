@@ -125,6 +125,25 @@ let reports = [];
 let selectedReport = null;
 let locationMap = null;
 
+// 전역 변수로 상태 및 신고 유형 매핑 정의
+const statusClass = {
+    'pending': 'bg-warning',
+    'resolved': 'bg-success',
+    'dismissed': 'bg-secondary'
+};
+
+const statusText = {
+    'pending': '해결 대기 중',
+    'resolved': '해결됨',
+    'dismissed': '해결 대기 중'
+};
+
+const reportTypeText = {
+    'helmet_multi': '헬멧 미착용 및 다인 탑승',
+    'helmet_single': '헬멧 미착용 및 1인 탑승',
+    'no_helmet_multi': '헬멧 착용 및 다인 탑승'
+};
+
 $(document).ready(function() {
     loadReports();
     
@@ -153,25 +172,7 @@ function displayReports(reportsData) {
         html = '<tr><td colspan="6" class="text-center text-muted">신고 내역이 없습니다.</td></tr>';
     } else {
         reportsData.forEach(report => {
-            const statusClass = {
-                'pending': 'bg-warning',
-                'resolved': 'bg-success',
-                'dismissed': 'bg-secondary'
-            };
             
-            const statusText = {
-                'pending': '해결 대기 중',
-                'resolved': '해결됨',
-                'dismissed': '해결 대기 중'
-            };
-            
-            const reportTypeText = {
-                'damage': '손상',
-                'theft': '도난',
-                'accident': '사고',
-                'parking': '주차 문제',
-                'other': '기타'
-            };
             
             const date = new Date(report.report_date).toLocaleDateString('ko-KR');
             
@@ -260,20 +261,6 @@ function showReportDetail(reportId) {
 function showReportModal(reportId) {
     const report = reports.find(r => r.id === reportId);
     if (!report) return;
-    
-    const reportTypeText = {
-        'damage': '손상',
-        'theft': '도난',
-        'accident': '사고',
-        'parking': '주차 문제',
-        'other': '기타'
-    };
-    
-    const statusText = {
-        'pending': '대기 중',
-        'resolved': '해결됨',
-        'dismissed': '기각됨'
-    };
     
     const date = new Date(report.report_date).toLocaleString('ko-KR');
     

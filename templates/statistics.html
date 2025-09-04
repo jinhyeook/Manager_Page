@@ -12,17 +12,17 @@
 </div>
 
 <!-- 요약 카드 -->
-<div class="row mb-4">
+<div class="row mb-3">
     <div class="col-md-4">
         <div class="card bg-primary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">전체 디바이스</h4>
-                        <h2 id="totalDevices">-</h2>
+                        <h6 class="card-title mb-1">전체 디바이스</h6>
+                        <h4 id="totalDevices" class="mb-0">-</h4>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-scooter fa-3x"></i>
+                    <div>
+                        <i class="fas fa-scooter fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -30,14 +30,14 @@
     </div>
     <div class="col-md-4">
         <div class="card bg-success text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">전체 회원</h4>
-                        <h2 id="totalUsers">-</h2>
+                        <h6 class="card-title mb-1">전체 회원</h6>
+                        <h4 id="totalUsers" class="mb-0">-</h4>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-3x"></i>
+                    <div>
+                        <i class="fas fa-users fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -45,14 +45,14 @@
     </div>
     <div class="col-md-4">
         <div class="card bg-info text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">전체 신고</h4>
-                        <h2 id="totalReports">-</h2>
+                        <h6 class="card-title mb-1">전체 신고</h6>
+                        <h4 id="totalReports" class="mb-0">-</h4>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                    <div>
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
                     </div>
                 </div>
             </div>
@@ -63,67 +63,77 @@
 <!-- 차트 영역 -->
 <div class="row">
     <!-- 디바이스 상태 원형 차트 -->
-    <div class="col-md-6 mb-4">
+    <div class="col-md-3 mb-3">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-pie"></i> 디바이스 상태 분포</h5>
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> 디바이스 상태</h6>
             </div>
-            <div class="card-body">
-                <canvas id="deviceStatusChart" width="400" height="300"></canvas>
+            <div class="card-body py-2">
+                <canvas id="deviceStatusChart" width="250" height="200"></canvas>
             </div>
         </div>
     </div>
     
-    <!-- 성별 분포 막대 차트 -->
-    <div class="col-md-6 mb-4">
+    <!-- 나이대별 분포 원형 차트 -->
+    <div class="col-md-3 mb-3">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar"></i> 성별 분포</h5>
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> 나이대별 분포</h6>
             </div>
-            <div class="card-body">
-                <canvas id="genderChart" width="400" height="300"></canvas>
+            <div class="card-body py-2">
+                <canvas id="ageChart" width="250" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 신고 유형별 통계 원형 차트 -->
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> 신고 유형별</h6>
+            </div>
+            <div class="card-body py-2">
+                <canvas id="reportTypeChart" width="250" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 지역별 디바이스 분포 -->
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> 지역별 분포</h6>
+            </div>
+            <div class="card-body py-2">
+                <div id="locationSummary">
+                    <p class="text-muted mb-0">지역별 통계를 불러오는 중...</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- 나이대별 분포 막대 차트 -->
-    <div class="col-md-6 mb-4">
+    <!-- 성별 분포 막대 차트 -->
+    <div class="col-md-6 mb-3">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar"></i> 나이대별 분포</h5>
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> 성별 분포</h6>
             </div>
-            <div class="card-body">
-                <canvas id="ageChart" width="400" height="300"></canvas>
+            <div class="card-body py-2">
+                <canvas id="genderChart" width="400" height="200"></canvas>
             </div>
         </div>
     </div>
     
     <!-- 배터리 레벨 분포 막대 차트 -->
-    <div class="col-md-6 mb-4">
+    <div class="col-md-6 mb-3">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-battery-half"></i> 배터리 레벨 분포</h5>
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-battery-half"></i> 배터리 레벨 분포</h6>
             </div>
-            <div class="card-body">
-                <canvas id="batteryChart" width="400" height="300"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 지역별 디바이스 분포 -->
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-map-marker-alt"></i> 지역별 디바이스 분포</h5>
-            </div>
-            <div class="card-body">
-                <div id="locationSummary">
-                    <p class="text-muted">지역별 통계를 불러오는 중...</p>
-                </div>
+            <div class="card-body py-2">
+                <canvas id="batteryChart" width="400" height="200"></canvas>
             </div>
         </div>
     </div>
@@ -153,6 +163,25 @@
     .bg-info {
         background-color: #17a2b8 !important;
     }
+    
+    /* 차트 컨테이너 높이 제한 */
+    .card-body canvas {
+        max-height: 200px !important;
+    }
+    
+    /* 작은 카드 스타일 */
+    .card-header.py-2 {
+        padding: 0.5rem 1rem;
+    }
+    
+    .card-body.py-2 {
+        padding: 0.5rem 1rem;
+    }
+    
+    /* 요약 카드 스타일 */
+    .card-body.py-3 {
+        padding: 0.75rem 1rem;
+    }
 </style>
 {% endblock %}
 
@@ -178,6 +207,7 @@ function loadStatistics() {
         createAgeChart(data.age_stats);
         createBatteryChart(data.battery_stats);
         updateLocationSummary(data.location_stats);
+        createReportTypeChart(data.report_type_stats);
     });
 }
 
@@ -289,31 +319,31 @@ function createAgeChart(ageData) {
     ];
     
     charts.age = new Chart(ctx, {
-        type: 'bar',
+        type: 'doughnut',
         data: {
             labels: labels,
             datasets: [{
-                label: '회원 수',
                 data: data,
                 backgroundColor: colors,
-                borderColor: colors,
-                borderWidth: 1
+                borderWidth: 2,
+                borderColor: '#fff'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            },
             plugins: {
                 legend: {
-                    display: false
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed}명 (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
@@ -412,6 +442,49 @@ function updateLocationSummary(locationData) {
     }
     
     $('#locationSummary').html(html);
+}
+
+function createReportTypeChart(reportTypeData) {
+    const ctx = document.getElementById('reportTypeChart').getContext('2d');
+    
+    if (charts.reportType) {
+        charts.reportType.destroy();
+    }
+    
+    const labels = reportTypeData.map(item => item.report_type);
+    const data = reportTypeData.map(item => item.count);
+    const colors = ['#dc3545', '#ffc107', '#17a2b8']; // 빨강, 노랑, 파랑
+    
+    charts.reportType = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed}건 (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 </script>
 {% endblock %}

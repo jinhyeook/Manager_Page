@@ -43,13 +43,14 @@
                                 <th>이메일</th>
                                 <th>전화번호</th>
                                 <th>가입일</th>
+                                <th>신고된 횟수</th>
                                 <th>상태</th>
                                 <th>작업</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
                             <tr>
-                                <td colspan="7" class="text-center text-muted">회원 목록을 불러오는 중...</td>
+                                <td colspan="8" class="text-center text-muted">회원 목록을 불러오는 중...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -206,7 +207,7 @@ function displayUsers(usersData) {
     let html = '';
     
     if (usersData.length === 0) {
-        html = '<tr><td colspan="7" class="text-center text-muted">회원이 없습니다.</td></tr>';
+        html = '<tr><td colspan="8" class="text-center text-muted">회원이 없습니다.</td></tr>';
     } else {
         usersData.forEach(user => {
             const statusClass = {
@@ -221,6 +222,16 @@ function displayUsers(usersData) {
             
             const date = new Date(user.registration_date).toLocaleDateString('ko-KR');
             
+            // 신고 횟수에 따른 배지 스타일
+            let reportBadgeClass = 'bg-secondary';
+            if (user.report_count > 5) {
+                reportBadgeClass = 'bg-danger';
+            } else if (user.report_count > 2) {
+                reportBadgeClass = 'bg-warning';
+            } else if (user.report_count > 0) {
+                reportBadgeClass = 'bg-info';
+            }
+            
             html += `
                 <tr>
                     <td>${user.USER_ID}</td>
@@ -228,6 +239,7 @@ function displayUsers(usersData) {
                     <td>${user.email}</td>
                     <td>${user.phone || '-'}</td>
                     <td>${date}</td>
+                    <td><span class="badge ${reportBadgeClass} status-badge">${user.report_count}회</span></td>
                     <td><span class="badge ${statusClass[user.status]} status-badge">${statusText[user.status]}</span></td>
                     <td class="action-buttons">
                         <button class="btn btn-sm btn-outline-primary" onclick="showEditUserModal('${user.USER_ID}')">

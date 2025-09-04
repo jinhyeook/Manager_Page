@@ -123,7 +123,8 @@ def get_reports():
             ST_Y(COALESCE(reported_loc, reporter_loc)) AS latitude,
             ST_X(COALESCE(reported_loc, reporter_loc)) AS longitude,
             report_time,
-            is_verified
+            is_verified,
+            report_case
         FROM REPORT_LOG
         ORDER BY report_time DESC
         """
@@ -131,12 +132,22 @@ def get_reports():
     rows = db.session.execute(sql).mappings().all()
     result = []
     for idx, r in enumerate(rows, start=1):
-        status = 'dismissed' if r['is_verified'] is None else ('resolved' if r['is_verified'] == 1 else 'dismissed')
+        status = 'dismissed' if r['is_verified'] == 0 else ('resolved' if r['is_verified'] == 1 else 'dismissed')
+        
+        # report_case 값에 따른 신고 유형 매핑
+        report_type = 'helmet_multi'  # 기본값
+        if r['report_case'] == 0:
+            report_type = 'helmet_multi'
+        elif r['report_case'] == 1:
+            report_type = 'helmet_single'
+        elif r['report_case'] == 2:
+            report_type = 'no_helmet_multi'
+        
         result.append({
             'id': idx,
             'device_id': r['device_id'],
             'user_id': r['reporter_user_id'],
-            'report_type': 'other',
+            'report_type': report_type,
             'description': '',
             'image_path': None,
             'latitude': float(r['latitude']) if r['latitude'] is not None else None,
@@ -151,14 +162,20 @@ def get_users():
     sql = text(
         """
         SELECT 
-            USER_ID,
-            name,
-            email,
-            phone,
-            sign_up_date,
-            is_delete
-        FROM USER_INFO
-        ORDER BY sign_up_date DESC
+            u.USER_ID,
+            u.name,
+            u.email,
+            u.phone,
+            u.sign_up_date,
+            u.is_delete,
+            COALESCE(r.report_count, 0) as report_count
+        FROM USER_INFO u
+        LEFT JOIN (
+            SELECT REPORTED_USER_ID, COUNT(*) as report_count
+            FROM REPORT_LOG
+            GROUP BY REPORTED_USER_ID
+        ) r ON u.USER_ID = r.REPORTED_USER_ID
+        ORDER BY u.sign_up_date DESC
         """
     )
     rows = db.session.execute(sql).mappings().all()
@@ -173,7 +190,8 @@ def get_users():
             'email': r['email'],
             'phone': r['phone'],
             'registration_date': datetime.combine(r['sign_up_date'], datetime.min.time()).isoformat() if r['sign_up_date'] else None,
-            'status': status
+            'status': status,
+            'report_count': int(r['report_count'])
         })
     return jsonify(result)
 
@@ -270,12 +288,12 @@ def create_user():
 def update_report_status(report_id):
     data = request.get_json()
     try:
-        # is_verified: NULL=dismissed(해결 대기 중), 1=resolved, 0=dismissed(해결 대기 중)
-        is_verified = None
+        # is_verified: 0=dismissed(해결 대기 중), 1=resolved, NULL=기타
+        is_verified = 0
         if data['status'] == 'resolved':
             is_verified = 1
         elif data['status'] == 'dismissed':
-            is_verified = None  # 해결 대기 중으로 설정
+            is_verified = 0  # 해결 대기 중으로 설정
         
         sql = text(
             """
@@ -400,20 +418,13 @@ def get_statistics():
     """)
     age_stats = db.session.execute(age_sql).mappings().all()
     
-    # 지역별 디바이스 통계 (서울시 주요 구역 기준)
+    # 지역별 디바이스 통계 (대분류 기준)
     location_sql = text("""
         SELECT 
             CASE 
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.565 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '강남구'
-                WHEN ST_Y(location) BETWEEN 37.465 AND 37.495 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '서초구'
-                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '마포구'
-                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '종로구'
-                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '용산구'
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '영등포구'
-                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '성동구'
-                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '광진구'
-                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '중구'
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '송파구'
+                WHEN ST_Y(location) BETWEEN 37.413 AND 37.715 AND ST_X(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
+                WHEN ST_Y(location) BETWEEN 37.0 AND 38.5 AND ST_X(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
+                WHEN ST_Y(location) BETWEEN 37.2 AND 37.8 AND ST_X(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
                 ELSE '기타 지역'
             END as district,
             COUNT(*) as count
@@ -421,27 +432,42 @@ def get_statistics():
         WHERE location IS NOT NULL
         GROUP BY 
             CASE 
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.565 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '강남구'
-                WHEN ST_Y(location) BETWEEN 37.465 AND 37.495 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '서초구'
-                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '마포구'
-                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '종로구'
-                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 126.945 AND 127.015 THEN '용산구'
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 126.885 AND 126.955 THEN '영등포구'
-                WHEN ST_Y(location) BETWEEN 37.565 AND 37.595 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '성동구'
-                WHEN ST_Y(location) BETWEEN 37.515 AND 37.545 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '광진구'
-                WHEN ST_Y(location) BETWEEN 37.545 AND 37.575 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '중구'
-                WHEN ST_Y(location) BETWEEN 37.495 AND 37.525 AND ST_X(location) BETWEEN 127.015 AND 127.085 THEN '송파구'
+                WHEN ST_Y(location) BETWEEN 37.413 AND 37.715 AND ST_X(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
+                WHEN ST_Y(location) BETWEEN 37.0 AND 38.5 AND ST_X(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
+                WHEN ST_Y(location) BETWEEN 37.2 AND 37.8 AND ST_X(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
                 ELSE '기타 지역'
             END
         ORDER BY count DESC
     """)
     location_stats = db.session.execute(location_sql).mappings().all()
     
+    # 신고 유형별 통계
+    report_type_sql = text("""
+        SELECT 
+            CASE 
+                WHEN report_case = 0 THEN '헬멧 미착용 및 다인 탑승'
+                WHEN report_case = 1 THEN '헬멧 미착용 및 1인 탑승'
+                WHEN report_case = 2 THEN '헬멧 착용 및 다인 탑승'
+                ELSE '헬멧 미착용 및 다인 탑승'
+            END as report_type,
+            COUNT(*) as count
+        FROM REPORT_LOG
+        GROUP BY 
+            CASE 
+                WHEN report_case = 0 THEN '헬멧 미착용 및 다인 탑승'
+                WHEN report_case = 1 THEN '헬멧 미착용 및 1인 탑승'
+                WHEN report_case = 2 THEN '헬멧 착용 및 다인 탑승'
+                ELSE '헬멧 미착용 및 다인 탑승'
+            END
+        ORDER BY count DESC
+    """)
+    report_type_stats = db.session.execute(report_type_sql).mappings().all()
+    
     # 전체 요약 통계
     total_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO")).scalar()
     available_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE is_used = 0")).scalar()
     low_battery_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level <= 20")).scalar()
-    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified IS NULL")).scalar()
+    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified = 0")).scalar()
     total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO WHERE is_delete = 0")).scalar()
     total_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG")).scalar()
     
@@ -451,6 +477,7 @@ def get_statistics():
         'gender_stats': [dict(row) for row in gender_stats],
         'age_stats': [dict(row) for row in age_stats],
         'location_stats': [dict(row) for row in location_stats],
+        'report_type_stats': [dict(row) for row in report_type_stats],
         'summary': {
             'total_devices': int(total_devices or 0),
             'total_users': int(total_users or 0),

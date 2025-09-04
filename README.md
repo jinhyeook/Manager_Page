@@ -171,18 +171,7 @@ ManagerPage/
 - Flask 2.3.3
 - Bootstrap 5.1.3
 
-## 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-## 기여하기
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 문의사항
-
-프로젝트에 대한 문의사항이 있으시면 이슈를 생성해 주세요.
+## 신고 유형 (DB report_log 테이블블의 report_case 컬럼럼 )
+- 헬멧 미착용 & 다인 탑승 -> 0
+- 헬멧 미착용 & 1인 탑승 -> 1
+- 헬멧 착용 & 다인 탑승 -> 2

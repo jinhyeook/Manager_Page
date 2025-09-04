@@ -62,7 +62,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="card-title">신고 대기</h4>
+                        <h4 class="card-title">신고 해결 대기</h4>
                         <h2 id="pending-reports">-</h2>
                     </div>
                     <div class="align-self-center">
@@ -146,15 +146,23 @@ function loadRecentReports() {
         const recentReports = data.slice(0, 5);
         let html = '';
         
+        // 신고 유형 한국어 매핑
+        const reportTypeText = {
+            'helmet_multi': '헬멧 미착용 및 다인 탑승',
+            'helmet_single': '헬멧 미착용 및 1인 탑승',
+            'no_helmet_multi': '헬멧 착용 및 다인 탑승'
+        };
+        
         if (recentReports.length === 0) {
             html = '<p class="text-muted">최근 신고 내역이 없습니다.</p>';
         } else {
             recentReports.forEach(report => {
                 const date = new Date(report.report_date).toLocaleDateString('ko-KR');
+                const reportTypeKorean = reportTypeText[report.report_type] || report.report_type;
                 html += `
                     <div class="border-bottom pb-2 mb-2">
                         <div class="d-flex justify-content-between">
-                            <strong>${report.report_type}</strong>
+                            <strong>${reportTypeKorean}</strong>
                             <small class="text-muted">${date}</small>
                         </div>
                         <div>디바이스: ${report.device_id}</div>
