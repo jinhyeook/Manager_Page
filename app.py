@@ -3,13 +3,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 import os
-from dotenv import load_dotenv
 from sqlalchemy import text
-
-load_dotenv()
+import requests
+import base64
+import json
 
 app = Flask(__name__)
-# 환경 변수에서 데이터베이스 설정 가져오기 (기본값 제공)
+
+
 db_username = os.getenv('DB_USERNAME', 'root')
 db_password = os.getenv('DB_PASSWORD', '010519')
 db_host = os.getenv('DB_HOST', 'localhost')
@@ -22,7 +23,7 @@ app.secret_key = 'your-secret-key-here'
 db = SQLAlchemy(app)
 CORS(app)
 
-# 라우트 정의
+############################ 관리자 웹페이지 #########################
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -463,7 +464,6 @@ def get_statistics():
     """)
     report_type_stats = db.session.execute(report_type_sql).mappings().all()
     
-    # 전체 요약 통계
     total_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO")).scalar()
     available_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE is_used = 0")).scalar()
     low_battery_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level <= 20")).scalar()
@@ -489,6 +489,70 @@ def get_statistics():
         'low_battery_devices': int(low_battery_devices or 0),
         'pending_reports': int(pending_reports or 0)
     })
+
+################################ 앱 페이지 ##########################
+# 🔑 클로바 OCR API 키와 URL (본인 키로 교체!)
+OCR_ENDPOINT_URL = "https://uc896l7nya.apigw.ntruss.com/custom/v1/42327/f3c7e3113ac357186e47550d706f42366acc27bae8adf2ddfb974888308c5dd5/infer"  # 실제 URL로 교체
+OCR_SECRET_KEY = "SEFFbmdpb0hiclpzeURVelBkT1Z2ekRvc1RRcXZVZ0g="  # 실제 시크릿 키로 교체
+API_GATEWAY_KEY = "L3q6cghiyc93PvgqDF23jQB6acz8HjbYoZF7R0KN"     # 실제 API Gateway 키로 교체
+
+# 🔎 클로바 OCR 호출 함수
+def call_clova_ocr(image_base64):
+    with open("last_upload.jpg", "wb") as f:
+        f.write(base64.b64decode(image_base64))
+
+    headers = {
+        "X-OCR-SECRET": OCR_SECRET_KEY,
+        "Content-Type": "application/json",
+        "x-ncp-apigw-api-key": API_GATEWAY_KEY
+    }
+
+    data = {
+        "images": [
+            {
+                "format": "jpg",
+                "name": "test_image",
+                "data": image_base64
+            }
+        ],
+        "requestId": "test_request_id",
+        "version": "V2",
+        "timestamp": 0
+    }
+
+    response = requests.post(OCR_ENDPOINT_URL, headers=headers, json=data)
+    result = response.json()
+    print(json.dumps(result, indent=2, ensure_ascii=False))  # 콘솔 출력
+    return result
+
+# 🔗 Flask 엔드포인트
+
+
+@app.route('/ocr', methods=['POST'])
+def ocr():
+    data = request.json
+    image_base64 = data.get('image')
+
+    if not image_base64:
+        return jsonify({"error": "No image data received."}), 400
+
+    raw = call_clova_ocr(image_base64)
+
+        
+    fields = raw.get("images", [{}])[0].get("fields", [])
+
+  
+    keys = ["번호", "이름", "주민번호"]
+
+   
+    filtered = {
+        f.get("name"): f.get("inferText", "")
+        for f in fields
+        if f.get("name") in keys
+    }
+    
+    return jsonify(filtered)
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
