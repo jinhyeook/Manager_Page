@@ -14,7 +14,7 @@ import re
 app = Flask(__name__)
 
 db_username = os.getenv('DB_USERNAME', 'root')
-db_password = os.getenv('DB_PASSWORD', 'raider')
+db_password = os.getenv('DB_PASSWORD', '010519')
 db_host = os.getenv('DB_HOST', 'localhost')
 db_name = os.getenv('DB_NAME', 'kick')
 
