@@ -707,7 +707,7 @@ def get_statistics():
         'pending_reports': int(pending_reports or 0)
     })
 
-################################ 앱 페이지 ##########################
+########################################### 앱 페이지 #############################################
 # 🔑 클로바 OCR API 키와 URL (본인 키로 교체!)
 OCR_ENDPOINT_URL = "https://uc896l7nya.apigw.ntruss.com/custom/v1/42327/f3c7e3113ac357186e47550d706f42366acc27bae8adf2ddfb974888308c5dd5/infer"  # 실제 URL로 교체
 OCR_SECRET_KEY = "SEFFbmdpb0hiclpzeURVelBkT1Z2ekRvc1RRcXZVZ0g="  # 실제 시크릿 키로 교체
@@ -767,6 +767,187 @@ def ocr():
     }
     
     return jsonify(filtered)
+
+# 마이페이지 api
+@app.route('/api/user-info/<user_id>', methods=['GET'])
+def get_user_info(user_id):
+    """특정 사용자의 상세 정보 조회 API (신고 횟수 포함)"""
+    try:
+        # 사용자 정보와 신고 횟수를 함께 조회
+        user_info_sql = text("""
+            SELECT 
+                u.USER_ID,
+                u.name,
+                u.email,
+                u.phone,
+                u.birth,
+                u.age,
+                COALESCE(r.report_count, 0) as report_count
+            FROM USER_INFO u
+            LEFT JOIN (
+                SELECT REPORTED_USER_ID, COUNT(*) as report_count
+                FROM REPORT_LOG
+                WHERE REPORTED_USER_ID = :user_id
+                GROUP BY REPORTED_USER_ID
+            ) r ON u.USER_ID = r.REPORTED_USER_ID
+            WHERE u.USER_ID = :user_id AND u.is_delete = 0
+        """)
+        
+        user = db.session.execute(user_info_sql, {'user_id': user_id}).mappings().first()
+        
+        if not user:
+            return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+        
+        # 사용자 정보 반환 (신고 횟수 포함)
+        return jsonify({
+            'USER_ID': user['USER_ID'],
+            'name': user['name'],
+            'email': user['email'],
+            'phone': user['phone'],
+            'birth': user['birth'].isoformat() if user['birth'] else None,
+            'age': user['age'],
+            'report_count': int(user['report_count'])
+        }), 200
+        
+    except Exception as e:
+        print(f"사용자 정보 조회 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
+        
+    except Exception as e:
+        print(f"사용자 정보 조회 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/user-info/<user_id>', methods=['PUT'])
+def update_user_info(user_id):
+    """사용자 정보 업데이트 API"""
+    try:
+        data = request.get_json()
+        
+        # 업데이트 가능한 필드들
+        update_fields = []
+        params = {'user_id': user_id}
+        
+        if 'name' in data:
+            update_fields.append('name = :name')
+            params['name'] = data['name']
+        
+        if 'phone' in data:
+            # 전화번호 형식 검증
+            if not is_valid_phone(data['phone']):
+                return jsonify({'error': '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'}), 400
+            update_fields.append('phone = :phone')
+            params['phone'] = data['phone']
+        
+        if 'birth' in data:
+            # 생년월일 형식 검증
+            if not is_valid_birth(data['birth']):
+                return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
+            
+            # 나이 계산
+            birth_date = datetime.strptime(data['birth'], '%Y-%m-%d')
+            today = datetime.now()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            
+            update_fields.append('birth = :birth')
+            update_fields.append('age = :age')
+            params['birth'] = data['birth']
+            params['age'] = age
+        
+        if not update_fields:
+            return jsonify({'error': '업데이트할 정보가 없습니다.'}), 400
+        
+        # 사용자 정보 업데이트
+        update_sql = text(f"""
+            UPDATE USER_INFO 
+            SET {', '.join(update_fields)}
+            WHERE USER_ID = :user_id AND is_delete = 0
+        """)
+        
+        result = db.session.execute(update_sql, params)
+        db.session.commit()
+        
+        if result.rowcount > 0:
+            return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
+        else:
+            return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"사용자 정보 업데이트 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 업데이트 중 오류가 발생했습니다.'}), 500
+
+# Flask 서버에 추가할 코드
+@app.route('/api/devices/available', methods=['GET'])
+def get_available_devices():
+    """사용 가능한 기기 목록 조회 API (is_used = 0인 기기들만)"""
+    try:
+        # 사용 가능한 기기들만 조회 (is_used = 0)
+        devices_sql = text("""
+            SELECT 
+                DEVICE_CODE as device_id,
+                ST_Y(location) AS latitude,
+                ST_X(location) AS longitude,
+                battery_level,
+                device_type,
+                created_at
+            FROM DEVICE_INFO 
+            WHERE is_used = 0 AND location IS NOT NULL
+            ORDER BY created_at DESC
+        """)
+        
+        rows = db.session.execute(devices_sql).mappings().all()
+        
+        result = []
+        for row in rows:
+            result.append({
+                'device_id': row['device_id'],
+                'latitude': float(row['latitude']) if row['latitude'] is not None else None,
+                'longitude': float(row['longitude']) if row['longitude'] is not None else None,
+                'battery_level': row['battery_level'],
+                'device_type': row['device_type'],
+                'created_at': row['created_at'].isoformat() if row['created_at'] else None
+            })
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"사용 가능한 기기 조회 오류: {str(e)}")
+        return jsonify({'error': '기기 정보 조회 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/devices/<device_id>/status', methods=['PUT'])
+def update_device_status(device_id):
+    """기기 사용 상태 업데이트 API"""
+    try:
+        data = request.get_json()
+        is_used = data.get('is_used', 0)
+        
+        # 기기 상태 업데이트
+        update_sql = text("""
+            UPDATE DEVICE_INFO 
+            SET is_used = :is_used
+            WHERE DEVICE_CODE = :device_code
+        """)
+        
+        result = db.session.execute(update_sql, {
+            'is_used': is_used,
+            'device_code': device_id
+        })
+        db.session.commit()
+        
+        if result.rowcount > 0:
+            status_text = "사용 중" if is_used == 1 else "사용 가능"
+            return jsonify({
+                'message': f'기기 상태가 "{status_text}"로 업데이트되었습니다.',
+                'device_id': device_id,
+                'is_used': is_used
+            }), 200
+        else:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 상태 업데이트 오류: {str(e)}")
+        return jsonify({'error': '기기 상태 업데이트 중 오류가 발생했습니다.'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
