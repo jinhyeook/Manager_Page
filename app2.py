@@ -768,6 +768,50 @@ def ocr():
     
     return jsonify(filtered)
 
+
+@app.route('/api/auth/verify-user-license', methods=['POST'])
+def verify_user_license():
+    """운전면허증 정보로 사용자 인증 API"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        driver_license = data.get('driver_license')
+        
+        print(f"인증 요청: name={name}, driver_license={driver_license}")
+        
+        if not name or not driver_license:
+            return jsonify({'error': '이름과 운전면허증 번호를 입력해주세요.'}), 400
+        
+        # DB에서 사용자 정보 확인 (이름과 운전면허증 번호가 일치하는지)
+        verify_sql = text("""
+            SELECT USER_ID, name, driver_license_number
+            FROM USER_INFO 
+            WHERE name = :name AND driver_license_number = :driver_license AND is_delete = 0
+        """)
+        
+        user = db.session.execute(verify_sql, {
+            'name': name,
+            'driver_license': driver_license
+        }).mappings().first()
+        
+        print(f"DB 조회 결과: {user}")
+        
+        if user:
+            return jsonify({
+                'verified': True,
+                'message': '인증이 완료되었습니다.',
+                'user_id': user['USER_ID']
+            }), 200
+        else:
+            return jsonify({
+                'verified': False,
+                'message': '인증에 실패했습니다. 정보를 다시 확인해주세요.'
+            }), 401
+            
+    except Exception as e:
+        print(f"운전면허증 인증 오류: {str(e)}")
+        return jsonify({'error': '인증 중 오류가 발생했습니다.'}), 500
+
 # 마이페이지 api
 @app.route('/api/user-info/<user_id>', methods=['GET'])
 def get_user_info(user_id):
@@ -876,7 +920,7 @@ def update_user_info(user_id):
         print(f"사용자 정보 업데이트 오류: {str(e)}")
         return jsonify({'error': '사용자 정보 업데이트 중 오류가 발생했습니다.'}), 500
 
-# Flask 서버에 추가할 코드
+
 @app.route('/api/devices/available', methods=['GET'])
 def get_available_devices():
     """사용 가능한 기기 목록 조회 API (is_used = 0인 기기들만)"""
@@ -904,7 +948,7 @@ def get_available_devices():
                 'latitude': float(row['latitude']) if row['latitude'] is not None else None,
                 'longitude': float(row['longitude']) if row['longitude'] is not None else None,
                 'battery_level': row['battery_level'],
-                'device_type': row['device_type'],
+                'device_type': row['device_type'],  # 이 필드가 중요합니다
                 'created_at': row['created_at'].isoformat() if row['created_at'] else None
             })
         
@@ -913,6 +957,7 @@ def get_available_devices():
     except Exception as e:
         print(f"사용 가능한 기기 조회 오류: {str(e)}")
         return jsonify({'error': '기기 정보 조회 중 오류가 발생했습니다.'}), 500
+
 
 @app.route('/api/devices/<device_id>/status', methods=['PUT'])
 def update_device_status(device_id):
@@ -948,6 +993,9 @@ def update_device_status(device_id):
         db.session.rollback()
         print(f"기기 상태 업데이트 오류: {str(e)}")
         return jsonify({'error': '기기 상태 업데이트 중 오류가 발생했습니다.'}), 500
+
+
+#####################################################################################
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
