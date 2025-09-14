@@ -10,6 +10,7 @@ CREATE TABLE user_info (
     birth DATE,
     age INT,
     sex CHAR(1),
+    personal_number VARCHAR(50),
     driver_license_number VARCHAR(50),
     sign_up_date DATE DEFAULT (CURRENT_DATE),
     is_delete BOOLEAN DEFAULT FALSE,
