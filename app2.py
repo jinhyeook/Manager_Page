@@ -55,6 +55,40 @@ def is_valid_birth(birth):
     except ValueError:
         return False
 
+# 주민번호 유효성 검사 함수
+def is_valid_ssn(ssn):
+    """주민번호 형식 유효성 검사 (XXXXXX-XXXXXXX)"""
+    pattern = r'^\d{6}-\d{7}$'
+    if not re.match(pattern, ssn):
+        return False
+    
+    # 주민번호 체크섬 검증 (간단한 버전)
+    try:
+        # 앞 6자리 (생년월일)
+        birth_part = ssn[:6]
+        # 뒤 7자리 (성별코드 + 지역코드 + 일련번호 + 체크섬)
+        id_part = ssn[7:]
+        
+        # 생년월일 유효성 검사
+        year = int(birth_part[:2])
+        month = int(birth_part[2:4])
+        day = int(birth_part[4:6])
+        
+        # 1900년대 또는 2000년대 판단
+        if year >= 0 and year <= 99:
+            if int(id_part[0]) <= 2:  # 1, 2로 시작하면 1900년대
+                year += 1900
+            else:  # 3, 4로 시작하면 2000년대
+                year += 2000
+        
+        # 날짜 유효성 검사
+        from datetime import datetime
+        datetime(year, month, day)
+        
+        return True
+    except (ValueError, IndexError):
+        return False
+
 ############################ 관리자 웹페이지 #########################
 @app.route('/')
 def index():
@@ -84,8 +118,8 @@ def register():
     try:
         data = request.get_json()
         
-        # 필수 필드 검증
-        required_fields = ['username', 'email', 'password', 'phone', 'birth', 'driver_license']
+        # 필수 필드 검증 (ssn 추가)
+        required_fields = ['username', 'email', 'password', 'phone', 'birth', 'ssn', 'driver_license']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field}는 필수 입력 항목입니다.'}), 400
@@ -102,6 +136,10 @@ def register():
         if not is_valid_birth(data['birth']):
             return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
         
+        # 주민번호 형식 검증 (새로 추가)
+        if not is_valid_ssn(data['ssn']):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
         # 비밀번호 길이 검증
         if len(data['password']) < 6:
             return jsonify({'error': '비밀번호는 최소 6자 이상이어야 합니다.'}), 400
@@ -112,6 +150,13 @@ def register():
         
         if email_exists > 0:
             return jsonify({'error': '이미 사용 중인 이메일입니다.'}), 409
+        
+        # 주민번호 중복 검사 (새로 추가)
+        ssn_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE personal_number = :ssn")
+        ssn_exists = db.session.execute(ssn_check_sql, {'ssn': data['ssn']}).scalar()
+        
+        if ssn_exists > 0:
+            return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
         
         # 사용자 ID 생성
         user_id = f"user_{uuid.uuid4().hex[:8]}"
@@ -124,10 +169,10 @@ def register():
         today = datetime.now()
         age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
         
-        # 사용자 정보 삽입 (실제 테이블 구조에 맞게 수정)
+        # 사용자 정보 삽입 (personal_number 컬럼 추가)
         insert_sql = text("""
-            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, driver_license_number, sign_up_date, is_delete)
-            VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :driver_license, :sign_up_date, 0)
+            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
+            VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :ssn, :driver_license, :sign_up_date, 0)
         """)
         
         db.session.execute(insert_sql, {
@@ -139,6 +184,7 @@ def register():
             'birth': data['birth'],
             'age': age,
             'sex': data.get('sex', 'M'),  # 기본값: 남성
+            'ssn': data['ssn'],  # 주민번호 추가
             'driver_license': data['driver_license'],
             'sign_up_date': datetime.now()
         })
@@ -771,27 +817,36 @@ def ocr():
 
 @app.route('/api/auth/verify-user-license', methods=['POST'])
 def verify_user_license():
-    """운전면허증 정보로 사용자 인증 API"""
+    """운전면허증 정보로 사용자 인증 API (주민번호 포함)"""
     try:
         data = request.get_json()
         name = data.get('name')
         driver_license = data.get('driver_license')
+        ssn = data.get('ssn')  # 주민번호 추가
         
-        print(f"인증 요청: name={name}, driver_license={driver_license}")
+        print(f"인증 요청: name={name}, driver_license={driver_license}, ssn={ssn}")
         
-        if not name or not driver_license:
-            return jsonify({'error': '이름과 운전면허증 번호를 입력해주세요.'}), 400
+        if not name or not driver_license or not ssn:
+            return jsonify({'error': '이름, 운전면허증 번호, 주민번호를 모두 입력해주세요.'}), 400
         
-        # DB에서 사용자 정보 확인 (이름과 운전면허증 번호가 일치하는지)
+        # 주민번호 형식 검증
+        if not is_valid_ssn(ssn):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
+        # DB에서 사용자 정보 확인 (이름, 운전면허증 번호, 주민번호가 모두 일치하는지)
         verify_sql = text("""
-            SELECT USER_ID, name, driver_license_number
+            SELECT USER_ID, name, driver_license_number, personal_number
             FROM USER_INFO 
-            WHERE name = :name AND driver_license_number = :driver_license AND is_delete = 0
+            WHERE name = :name 
+            AND driver_license_number = :driver_license 
+            AND personal_number = :ssn 
+            AND is_delete = 0
         """)
         
         user = db.session.execute(verify_sql, {
             'name': name,
-            'driver_license': driver_license
+            'driver_license': driver_license,
+            'ssn': ssn
         }).mappings().first()
         
         print(f"DB 조회 결과: {user}")
@@ -897,6 +952,14 @@ def update_user_info(user_id):
             params['birth'] = data['birth']
             params['age'] = age
         
+        if 'personal_number' in data:
+            # 주민번호 형식 검증만 수행 (중복 확인 제거)
+            if not is_valid_ssn(data['personal_number']):
+                return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+            
+            update_fields.append('personal_number = :personal_number')
+            params['personal_number'] = data['personal_number']
+        
         if not update_fields:
             return jsonify({'error': '업데이트할 정보가 없습니다.'}), 400
         
@@ -907,13 +970,21 @@ def update_user_info(user_id):
             WHERE USER_ID = :user_id AND is_delete = 0
         """)
         
-        result = db.session.execute(update_sql, params)
-        db.session.commit()
-        
-        if result.rowcount > 0:
-            return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
-        else:
-            return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+        try:
+            result = db.session.execute(update_sql, params)
+            db.session.commit()
+            
+            if result.rowcount > 0:
+                return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
+            else:
+                return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+                
+        except Exception as db_error:
+            db.session.rollback()
+            if "personal_number" in str(db_error):
+                return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
+            else:
+                raise db_error
             
     except Exception as e:
         db.session.rollback()
