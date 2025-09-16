@@ -1065,6 +1065,258 @@ def update_device_status(device_id):
         print(f"기기 상태 업데이트 오류: {str(e)}")
         return jsonify({'error': '기기 상태 업데이트 중 오류가 발생했습니다.'}), 500
 
+@app.route('/api/device-rental/start', methods=['POST'])
+def start_device_rental():
+    """기기 대여 시작 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        start_latitude = data.get('start_latitude')
+        start_longitude = data.get('start_longitude')
+        
+        if not all([user_id, device_code, start_latitude, start_longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # 기기가 사용 가능한지 확인하고 위치 정보도 함께 가져오기
+        device_check_sql = text("""
+            SELECT is_used, location FROM device_info WHERE DEVICE_CODE = :device_code
+        """)
+        device = db.session.execute(device_check_sql, {'device_code': device_code}).mappings().first()
+        
+        if not device:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+        
+        if device['is_used'] == 1:
+            return jsonify({'error': '이미 사용 중인 기기입니다.'}), 409
+        
+        # device_use_log 테이블에 대여 시작 기록 (device_info의 location 사용)
+        start_rental_sql = text("""
+            INSERT INTO device_use_log (USER_ID, DEVICE_CODE, start_time, start_loc)
+            VALUES (:user_id, :device_code, NOW(), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
+        """)
+        
+        db.session.execute(start_rental_sql, {
+            'user_id': user_id,
+            'device_code': device_code
+        })
+        
+        # device_info 테이블의 is_used를 1로 변경
+        update_device_sql = text("""
+            UPDATE device_info SET is_used = 1 WHERE DEVICE_CODE = :device_code
+        """)
+        
+        db.session.execute(update_device_sql, {'device_code': device_code})
+        db.session.commit()
+        
+        return jsonify({
+            'message': '기기 대여가 시작되었습니다.',
+            'rental_id': f"{user_id}_{device_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 대여 시작 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 시작 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/realtime-log', methods=['POST'])
+def send_realtime_log():
+    """실시간 위치 로그 전송 API (10초마다 호출)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        print(f"실시간 로그 수신: user_id={user_id}, device_code={device_code}")
+        print(f"위치: lat={latitude}, lng={longitude}")
+        print(f"시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        if not all([user_id, device_code, latitude, longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # device_realtime_log 테이블에 실시간 로그 저장 (시간과 초까지 포함)
+        realtime_log_sql = text("""
+            INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
+            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
+        """)
+        
+        db.session.execute(realtime_log_sql, {
+            'device_code': device_code,
+            'user_id': user_id,
+            'latitude': latitude,
+            'longitude': longitude
+        })
+        
+        db.session.commit()
+        
+        print(f"실시간 로그 저장 완료: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        return jsonify({'message': '실시간 로그가 저장되었습니다.'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"실시간 로그 전송 오류: {str(e)}")
+        return jsonify({'error': '실시간 로그 전송 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/end', methods=['POST'])
+def end_device_rental():
+    """기기 대여 종료 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        end_latitude = data.get('end_latitude')
+        end_longitude = data.get('end_longitude')
+        
+        print(f"대여 종료 요청 받음: user_id={user_id}, device_code={device_code}")
+        print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
+        
+        if not all([user_id, device_code, end_latitude, end_longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # 대여 기록 조회
+        rental_check_sql = text("""
+            SELECT start_time, start_loc FROM device_use_log 
+            WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        rental = db.session.execute(rental_check_sql, {
+            'user_id': user_id,
+            'device_code': device_code
+        }).mappings().first()
+        
+        if not rental:
+            print(f"진행 중인 대여 기록을 찾을 수 없음: user_id={user_id}, device_code={device_code}")
+            return jsonify({'error': '진행 중인 대여 기록을 찾을 수 없습니다.'}), 404
+        
+        print(f"대여 기록 찾음: start_time={rental['start_time']}")
+        
+        # 사용 시간 계산 (분 단위)
+        start_time = rental['start_time']
+        end_time = datetime.now()
+        usage_minutes = int((end_time - start_time).total_seconds() / 60)
+        
+        # 요금 계산 (5분당 500원)
+        fee = (usage_minutes // 5 + (1 if usage_minutes % 5 > 0 else 0)) * 500
+        
+        print(f"사용 시간: {usage_minutes}분, 요금: {fee}원")
+        
+        # 이동 거리 계산 (Haversine 공식 사용)
+        start_lat = db.session.execute(text("SELECT ST_Y(start_loc) as lat FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                      {'user_id': user_id, 'device_code': device_code}).scalar()
+        start_lng = db.session.execute(text("SELECT ST_X(start_loc) as lng FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                      {'user_id': user_id, 'device_code': device_code}).scalar()
+        
+        # 거리 계산 함수 (Haversine 공식)
+        def calculate_distance(lat1, lon1, lat2, lon2):
+            from math import radians, cos, sin, asin, sqrt
+            
+            # 지구의 반지름 (km)
+            R = 6371
+            
+            # 위도, 경도를 라디안으로 변환
+            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+            
+            # Haversine 공식
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+            c = 2 * asin(sqrt(a))
+            distance = R * c
+            
+            return distance
+        
+        moved_distance = calculate_distance(start_lat, start_lng, end_latitude, end_longitude)
+        print(f"이동 거리: {moved_distance:.2f}km")
+        
+        # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
+        end_rental_sql = text("""
+            UPDATE device_use_log 
+            SET end_time = NOW(), 
+                end_loc = ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326),
+                fee = :fee,
+                moved_distance = :moved_distance
+            WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        print("device_use_log 테이블 업데이트 시도...")
+        result1 = db.session.execute(end_rental_sql, {
+            'user_id': user_id,
+            'device_code': device_code,
+            'latitude': end_latitude,
+            'longitude': end_longitude,
+            'fee': fee,
+            'moved_distance': int(moved_distance * 1000)  # 미터 단위로 변환
+        })
+        print(f"device_use_log 업데이트 결과: {result1.rowcount}개 행이 업데이트됨")
+        
+        # device_info 테이블의 is_used를 0으로 변경
+        update_device_sql = text("""
+            UPDATE device_info SET is_used = 0 WHERE DEVICE_CODE = :device_code
+        """)
+        
+        print(f"기기 상태 업데이트 시도: device_code={device_code}")
+        result2 = db.session.execute(update_device_sql, {'device_code': device_code})
+        print(f"기기 상태 업데이트 결과: {result2.rowcount}개 행이 업데이트됨")
+        
+        if result2.rowcount == 0:
+            print(f"경고: device_code '{device_code}'에 해당하는 기기를 찾을 수 없습니다!")
+        else:
+            print(f"성공: device_code '{device_code}'의 is_used가 0으로 업데이트되었습니다.")
+        
+        db.session.commit()
+        print("데이터베이스 커밋 완료")
+        
+        return jsonify({
+            'message': '기기 대여가 종료되었습니다.',
+            'usage_minutes': usage_minutes,
+            'fee': fee,
+            'moved_distance': round(moved_distance, 2)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 대여 종료 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 종료 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/status/<device_code>', methods=['GET'])
+def get_device_rental_status(device_code):
+    """기기 대여 상태 확인 API"""
+    try:
+        # 기기 사용 상태 확인
+        device_sql = text("""
+            SELECT is_used, battery_level FROM device_info WHERE DEVICE_CODE = :device_code
+        """)
+        
+        device = db.session.execute(device_sql, {'device_code': device_code}).mappings().first()
+        
+        if not device:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+        
+        # 현재 대여 중인지 확인
+        rental_sql = text("""
+            SELECT USER_ID, start_time FROM device_use_log 
+            WHERE DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        rental = db.session.execute(rental_sql, {'device_code': device_code}).mappings().first()
+        
+        return jsonify({
+            'device_code': device_code,
+            'is_used': bool(device['is_used']),
+            'battery_level': device['battery_level'],
+            'is_rented': rental is not None,
+            'rental_info': {
+                'user_id': rental['USER_ID'] if rental else None,
+                'start_time': rental['start_time'].isoformat() if rental else None
+            } if rental else None
+        }), 200
+        
+    except Exception as e:
+        print(f"기기 대여 상태 확인 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
 
 #####################################################################################
 

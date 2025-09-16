@@ -43,6 +43,16 @@ CREATE TABLE device_use_log (
     FOREIGN KEY (DEVICE_CODE) REFERENCES device_info(DEVICE_CODE)
 );
 
+-- 실시간 기기 사용 로그 수집 테이블
+CREATE TABLE device_realtime_log (
+    DEVICE_CODE VARCHAR(50) NOT NULL,
+    USER_ID varchar(50) NOT NULL,
+    location POINT NOT NULL,
+    now_time DATETIME NOT NULL,
+	FOREIGN KEY (USER_ID) REFERENCES device_use_log(USER_ID),
+    FOREIGN KEY (DEVICE_CODE) REFERENCES device_use_log(DEVICE_CODE)
+);
+
 -- 신고 기록 테이블 (REPORT_LOG)
 CREATE TABLE report_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
