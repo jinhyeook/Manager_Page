@@ -1193,15 +1193,18 @@ def end_device_rental():
         
         print(f"대여 기록 찾음: start_time={rental['start_time']}")
         
-        # 사용 시간 계산 (분 단위)
+        # 사용 시간 계산 (초 단위)
         start_time = rental['start_time']
         end_time = datetime.now()
-        usage_minutes = int((end_time - start_time).total_seconds() / 60)
+        usage_seconds = int((end_time - start_time).total_seconds())
+        usage_minutes = usage_seconds // 60
         
-        # 요금 계산 (5분당 500원)
-        fee = (usage_minutes // 5 + (1 if usage_minutes % 5 > 0 else 0)) * 500
+        # 요금 계산 (10초마다 100원)
+        # 10초 단위로 올림 계산
+        fee_units = (usage_seconds + 9) // 10  # 10초 단위로 올림
+        fee = fee_units * 100
         
-        print(f"사용 시간: {usage_minutes}분, 요금: {fee}원")
+        print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초, 요금: {fee}원")
         
         # 이동 거리 계산 (Haversine 공식 사용)
         start_lat = db.session.execute(text("SELECT ST_Y(start_loc) as lat FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
@@ -1234,7 +1237,7 @@ def end_device_rental():
         # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
         end_rental_sql = text("""
             UPDATE device_use_log 
-            SET end_time = NOW(), 
+            SET end_time = NOW(),
                 end_loc = ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326),
                 fee = :fee,
                 moved_distance = :moved_distance
@@ -1280,6 +1283,9 @@ def end_device_rental():
         db.session.rollback()
         print(f"기기 대여 종료 오류: {str(e)}")
         return jsonify({'error': '기기 대여 종료 중 오류가 발생했습니다.'}), 500
+
+
+
 
 @app.route('/api/device-rental/status/<device_code>', methods=['GET'])
 def get_device_rental_status(device_code):
