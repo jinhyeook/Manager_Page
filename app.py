@@ -7,9 +7,11 @@ from sqlalchemy import text
 import requests
 import base64
 import json
+import hashlib
+import uuid
+import re
 
 app = Flask(__name__)
-
 
 db_username = os.getenv('DB_USERNAME', 'root')
 db_password = os.getenv('DB_PASSWORD', '010519')
@@ -22,6 +24,70 @@ app.secret_key = 'your-secret-key-here'
 
 db = SQLAlchemy(app)
 CORS(app)
+
+# 비밀번호 해싱 함수
+def hash_password(password):
+    """비밀번호를 SHA-256으로 해싱"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# 이메일 유효성 검사 함수
+def is_valid_email(email):
+    """이메일 형식 유효성 검사"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+# 전화번호 유효성 검사 함수
+def is_valid_phone(phone):
+    """한국 전화번호 형식 유효성 검사"""
+    pattern = r'^01[0-9]-?[0-9]{4}-?[0-9]{4}$'
+    return re.match(pattern, phone) is not None
+
+# 생년월일 유효성 검사 함수
+def is_valid_birth(birth):
+    """생년월일 형식 유효성 검사 (YYYY-MM-DD)"""
+    pattern = r'^\d{4}-\d{2}-\d{2}$'
+    if not re.match(pattern, birth):
+        return False
+    
+    try:
+        datetime.strptime(birth, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+# 주민번호 유효성 검사 함수
+def is_valid_ssn(ssn):
+    """주민번호 형식 유효성 검사 (XXXXXX-XXXXXXX)"""
+    pattern = r'^\d{6}-\d{7}$'
+    if not re.match(pattern, ssn):
+        return False
+    
+    # 주민번호 체크섬 검증 (간단한 버전)
+    try:
+        # 앞 6자리 (생년월일)
+        birth_part = ssn[:6]
+        # 뒤 7자리 (성별코드 + 지역코드 + 일련번호 + 체크섬)
+        id_part = ssn[7:]
+        
+        # 생년월일 유효성 검사
+        year = int(birth_part[:2])
+        month = int(birth_part[2:4])
+        day = int(birth_part[4:6])
+        
+        # 1900년대 또는 2000년대 판단
+        if year >= 0 and year <= 99:
+            if int(id_part[0]) <= 2:  # 1, 2로 시작하면 1900년대
+                year += 1900
+            else:  # 3, 4로 시작하면 2000년대
+                year += 2000
+        
+        # 날짜 유효성 검사
+        from datetime import datetime
+        datetime(year, month, day)
+        
+        return True
+    except (ValueError, IndexError):
+        return False
 
 ############################ 관리자 웹페이지 #########################
 @app.route('/')
@@ -43,6 +109,205 @@ def users():
 @app.route('/statistics')
 def statistics():
     return render_template('statistics.html')
+
+############################ 인증 관련 API #########################
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """회원가입 API"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증 (ssn 추가)
+        required_fields = ['username', 'email', 'password', 'phone', 'birth', 'ssn', 'driver_license']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'{field}는 필수 입력 항목입니다.'}), 400
+        
+        # 이메일 형식 검증
+        if not is_valid_email(data['email']):
+            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
+        
+        # 전화번호 형식 검증
+        if not is_valid_phone(data['phone']):
+            return jsonify({'error': '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'}), 400
+        
+        # 생년월일 형식 검증
+        if not is_valid_birth(data['birth']):
+            return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
+        
+        # 주민번호 형식 검증 (새로 추가)
+        if not is_valid_ssn(data['ssn']):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
+        # 비밀번호 길이 검증
+        if len(data['password']) < 6:
+            return jsonify({'error': '비밀번호는 최소 6자 이상이어야 합니다.'}), 400
+        
+        # 이메일 중복 검사
+        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_exists = db.session.execute(email_check_sql, {'email': data['email']}).scalar()
+        
+        if email_exists > 0:
+            return jsonify({'error': '이미 사용 중인 이메일입니다.'}), 409
+        
+        # 주민번호 중복 검사 (새로 추가)
+        ssn_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE personal_number = :ssn")
+        ssn_exists = db.session.execute(ssn_check_sql, {'ssn': data['ssn']}).scalar()
+        
+        if ssn_exists > 0:
+            return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
+        
+        # 사용자 ID 생성
+        user_id = f"user_{uuid.uuid4().hex[:8]}"
+        
+        # 기존 데이터와 호환성을 위해 평문으로 저장
+        plain_password = data['password']
+        
+        # 나이 계산
+        birth_date = datetime.strptime(data['birth'], '%Y-%m-%d')
+        today = datetime.now()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        
+        # 사용자 정보 삽입 (personal_number 컬럼 추가)
+        insert_sql = text("""
+            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
+            VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :ssn, :driver_license, :sign_up_date, 0)
+        """)
+        
+        db.session.execute(insert_sql, {
+            'user_id': user_id,
+            'name': data['username'],
+            'email': data['email'],
+            'password': plain_password,
+            'phone': data['phone'],
+            'birth': data['birth'],
+            'age': age,
+            'sex': data.get('sex', 'M'),  # 기본값: 남성
+            'ssn': data['ssn'],  # 주민번호 추가
+            'driver_license': data['driver_license'],
+            'sign_up_date': datetime.now()
+        })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': '회원가입이 완료되었습니다.',
+            'user_id': user_id,
+            'username': data['username']
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"회원가입 오류: {str(e)}")
+        return jsonify({'error': '회원가입 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """로그인 API"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        if not data.get('email') or not data.get('password'):
+            return jsonify({'error': '이메일과 비밀번호를 입력해주세요.'}), 400
+        
+        # 사용자 정보 조회 (실제 테이블 구조에 맞게 수정)
+        # 기존 데이터는 평문 비밀번호로 저장되어 있으므로 평문으로 비교
+        login_sql = text("""
+            SELECT USER_ID, name, email, phone, birth, age, sex, driver_license_number, sign_up_date, is_delete, user_pw
+            FROM USER_INFO 
+            WHERE email = :email
+        """)
+        
+        user = db.session.execute(login_sql, {
+            'email': data['email']
+        }).mappings().first()
+        
+        # 비밀번호 확인 (평문 비교)
+        if not user or user['user_pw'] != data['password']:
+            user = None
+        
+        if not user:
+            return jsonify({'error': '이메일 또는 비밀번호가 올바르지 않습니다.'}), 401
+        
+        # 탈퇴한 사용자 확인
+        if user['is_delete'] == 1:
+            return jsonify({'error': '탈퇴한 계정입니다.'}), 401
+        
+        # 로그인 성공 시 사용자 정보 반환
+        return jsonify({
+            'message': '로그인 성공',
+            'user': {
+                'user_id': user['USER_ID'],
+                'username': user['name'],
+                'email': user['email'],
+                'phone': user['phone'],
+                'birth': user['birth'].isoformat() if user['birth'] else None,
+                'age': user['age'],
+                'sex': user['sex'],
+                'driver_license': user['driver_license_number'],
+                'sign_up_date': user['sign_up_date'].isoformat() if user['sign_up_date'] else None
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"로그인 오류: {str(e)}")
+        return jsonify({'error': '로그인 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/check-email', methods=['POST'])
+def check_email():
+    """이메일 중복 확인 API"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': '이메일을 입력해주세요.'}), 400
+        
+        if not is_valid_email(email):
+            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
+        
+        # 이메일 중복 검사
+        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_exists = db.session.execute(email_check_sql, {'email': email}).scalar()
+        
+        if email_exists > 0:
+            return jsonify({'available': False, 'message': '이미 사용 중인 이메일입니다.'}), 409
+        else:
+            return jsonify({'available': True, 'message': '사용 가능한 이메일입니다.'}), 200
+            
+    except Exception as e:
+        print(f"이메일 확인 오류: {str(e)}")
+        return jsonify({'error': '이메일 확인 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/verify-license', methods=['POST'])
+def verify_license():
+    """운전면허증 번호 유효성 검사 API"""
+    try:
+        data = request.get_json()
+        license_number = data.get('driver_license')
+        
+        if not license_number:
+            return jsonify({'error': '운전면허증 번호를 입력해주세요.'}), 400
+        
+        # 운전면허증 번호 형식 검증 (한국 형식: 12-34-567890-12)
+        pattern = r'^\d{2}-\d{2}-\d{6}-\d{2}$'
+        if not re.match(pattern, license_number):
+            return jsonify({'error': '올바른 운전면허증 번호 형식이 아닙니다. (예: 12-34-567890-12)'}), 400
+        
+        # 중복 확인
+        license_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE driver_license_number = :license")
+        license_exists = db.session.execute(license_check_sql, {'license': license_number}).scalar()
+        
+        if license_exists > 0:
+            return jsonify({'available': False, 'message': '이미 등록된 운전면허증 번호입니다.'}), 409
+        else:
+            return jsonify({'available': True, 'message': '사용 가능한 운전면허증 번호입니다.'}), 200
+            
+    except Exception as e:
+        print(f"운전면허증 확인 오류: {str(e)}")
+        return jsonify({'error': '운전면허증 확인 중 오류가 발생했습니다.'}), 500
 
 # API 엔드포인트 (rAider 스키마 매핑)
 @app.route('/api/devices')
@@ -282,8 +547,6 @@ def create_user():
         db.session.rollback()
         return jsonify({'error': f'생성 중 오류가 발생했습니다: {str(e)}'}), 500
 
-
-
 # 신고 상태 업데이트 API
 @app.route('/api/reports/<report_id>/status', methods=['PUT'])
 def update_report_status(report_id):
@@ -490,7 +753,7 @@ def get_statistics():
         'pending_reports': int(pending_reports or 0)
     })
 
-################################ 앱 페이지 ##########################
+########################################### 앱 페이지 #############################################
 # 🔑 클로바 OCR API 키와 URL (본인 키로 교체!)
 OCR_ENDPOINT_URL = "https://uc896l7nya.apigw.ntruss.com/custom/v1/42327/f3c7e3113ac357186e47550d706f42366acc27bae8adf2ddfb974888308c5dd5/infer"  # 실제 URL로 교체
 OCR_SECRET_KEY = "SEFFbmdpb0hiclpzeURVelBkT1Z2ekRvc1RRcXZVZ0g="  # 실제 시크릿 키로 교체
@@ -526,8 +789,6 @@ def call_clova_ocr(image_base64):
     return result
 
 # 🔗 Flask 엔드포인트
-
-
 @app.route('/ocr', methods=['POST'])
 def ocr():
     data = request.json
@@ -553,6 +814,517 @@ def ocr():
     
     return jsonify(filtered)
 
+
+@app.route('/api/auth/verify-user-license', methods=['POST'])
+def verify_user_license():
+    """운전면허증 정보로 사용자 인증 API (주민번호 포함)"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        driver_license = data.get('driver_license')
+        ssn = data.get('ssn')  # 주민번호 추가
+        
+        print(f"인증 요청: name={name}, driver_license={driver_license}, ssn={ssn}")
+        
+        if not name or not driver_license or not ssn:
+            return jsonify({'error': '이름, 운전면허증 번호, 주민번호를 모두 입력해주세요.'}), 400
+        
+        # 주민번호 형식 검증
+        if not is_valid_ssn(ssn):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
+        # DB에서 사용자 정보 확인 (이름, 운전면허증 번호, 주민번호가 모두 일치하는지)
+        verify_sql = text("""
+            SELECT USER_ID, name, driver_license_number, personal_number
+            FROM USER_INFO 
+            WHERE name = :name 
+            AND driver_license_number = :driver_license 
+            AND personal_number = :ssn 
+            AND is_delete = 0
+        """)
+        
+        user = db.session.execute(verify_sql, {
+            'name': name,
+            'driver_license': driver_license,
+            'ssn': ssn
+        }).mappings().first()
+        
+        print(f"DB 조회 결과: {user}")
+        
+        if user:
+            return jsonify({
+                'verified': True,
+                'message': '인증이 완료되었습니다.',
+                'user_id': user['USER_ID']
+            }), 200
+        else:
+            return jsonify({
+                'verified': False,
+                'message': '인증에 실패했습니다. 정보를 다시 확인해주세요.'
+            }), 401
+            
+    except Exception as e:
+        print(f"운전면허증 인증 오류: {str(e)}")
+        return jsonify({'error': '인증 중 오류가 발생했습니다.'}), 500
+
+# 마이페이지 api
+@app.route('/api/user-info/<user_id>', methods=['GET'])
+def get_user_info(user_id):
+    """특정 사용자의 상세 정보 조회 API (신고 횟수 포함)"""
+    try:
+        # 사용자 정보와 신고 횟수를 함께 조회
+        user_info_sql = text("""
+            SELECT 
+                u.USER_ID,
+                u.name,
+                u.email,
+                u.phone,
+                u.birth,
+                u.age,
+                COALESCE(r.report_count, 0) as report_count
+            FROM USER_INFO u
+            LEFT JOIN (
+                SELECT REPORTED_USER_ID, COUNT(*) as report_count
+                FROM REPORT_LOG
+                WHERE REPORTED_USER_ID = :user_id
+                GROUP BY REPORTED_USER_ID
+            ) r ON u.USER_ID = r.REPORTED_USER_ID
+            WHERE u.USER_ID = :user_id AND u.is_delete = 0
+        """)
+        
+        user = db.session.execute(user_info_sql, {'user_id': user_id}).mappings().first()
+        
+        if not user:
+            return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+        
+        # 사용자 정보 반환 (신고 횟수 포함)
+        return jsonify({
+            'USER_ID': user['USER_ID'],
+            'name': user['name'],
+            'email': user['email'],
+            'phone': user['phone'],
+            'birth': user['birth'].isoformat() if user['birth'] else None,
+            'age': user['age'],
+            'report_count': int(user['report_count'])
+        }), 200
+        
+    except Exception as e:
+        print(f"사용자 정보 조회 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
+        
+    except Exception as e:
+        print(f"사용자 정보 조회 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/user-info/<user_id>', methods=['PUT'])
+def update_user_info(user_id):
+    """사용자 정보 업데이트 API"""
+    try:
+        data = request.get_json()
+        
+        # 업데이트 가능한 필드들
+        update_fields = []
+        params = {'user_id': user_id}
+        
+        if 'name' in data:
+            update_fields.append('name = :name')
+            params['name'] = data['name']
+        
+        if 'phone' in data:
+            # 전화번호 형식 검증
+            if not is_valid_phone(data['phone']):
+                return jsonify({'error': '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'}), 400
+            update_fields.append('phone = :phone')
+            params['phone'] = data['phone']
+        
+        if 'birth' in data:
+            # 생년월일 형식 검증
+            if not is_valid_birth(data['birth']):
+                return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
+            
+            # 나이 계산
+            birth_date = datetime.strptime(data['birth'], '%Y-%m-%d')
+            today = datetime.now()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            
+            update_fields.append('birth = :birth')
+            update_fields.append('age = :age')
+            params['birth'] = data['birth']
+            params['age'] = age
+        
+        if 'personal_number' in data:
+            # 주민번호 형식 검증만 수행 (중복 확인 제거)
+            if not is_valid_ssn(data['personal_number']):
+                return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+            
+            update_fields.append('personal_number = :personal_number')
+            params['personal_number'] = data['personal_number']
+        
+        if not update_fields:
+            return jsonify({'error': '업데이트할 정보가 없습니다.'}), 400
+        
+        # 사용자 정보 업데이트
+        update_sql = text(f"""
+            UPDATE USER_INFO 
+            SET {', '.join(update_fields)}
+            WHERE USER_ID = :user_id AND is_delete = 0
+        """)
+        
+        try:
+            result = db.session.execute(update_sql, params)
+            db.session.commit()
+            
+            if result.rowcount > 0:
+                return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
+            else:
+                return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
+                
+        except Exception as db_error:
+            db.session.rollback()
+            if "personal_number" in str(db_error):
+                return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
+            else:
+                raise db_error
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"사용자 정보 업데이트 오류: {str(e)}")
+        return jsonify({'error': '사용자 정보 업데이트 중 오류가 발생했습니다.'}), 500
+
+
+@app.route('/api/devices/available', methods=['GET'])
+def get_available_devices():
+    """사용 가능한 기기 목록 조회 API (is_used = 0인 기기들만)"""
+    try:
+        # 사용 가능한 기기들만 조회 (is_used = 0)
+        devices_sql = text("""
+            SELECT 
+                DEVICE_CODE as device_id,
+                ST_Y(location) AS latitude,
+                ST_X(location) AS longitude,
+                battery_level,
+                device_type,
+                created_at
+            FROM DEVICE_INFO 
+            WHERE is_used = 0 AND location IS NOT NULL
+            ORDER BY created_at DESC
+        """)
+        
+        rows = db.session.execute(devices_sql).mappings().all()
+        
+        result = []
+        for row in rows:
+            result.append({
+                'device_id': row['device_id'],
+                'latitude': float(row['latitude']) if row['latitude'] is not None else None,
+                'longitude': float(row['longitude']) if row['longitude'] is not None else None,
+                'battery_level': row['battery_level'],
+                'device_type': row['device_type'],  # 이 필드가 중요합니다
+                'created_at': row['created_at'].isoformat() if row['created_at'] else None
+            })
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"사용 가능한 기기 조회 오류: {str(e)}")
+        return jsonify({'error': '기기 정보 조회 중 오류가 발생했습니다.'}), 500
+
+
+@app.route('/api/devices/<device_id>/status', methods=['PUT'])
+def update_device_status(device_id):
+    """기기 사용 상태 업데이트 API"""
+    try:
+        data = request.get_json()
+        is_used = data.get('is_used', 0)
+        
+        # 기기 상태 업데이트
+        update_sql = text("""
+            UPDATE DEVICE_INFO 
+            SET is_used = :is_used
+            WHERE DEVICE_CODE = :device_code
+        """)
+        
+        result = db.session.execute(update_sql, {
+            'is_used': is_used,
+            'device_code': device_id
+        })
+        db.session.commit()
+        
+        if result.rowcount > 0:
+            status_text = "사용 중" if is_used == 1 else "사용 가능"
+            return jsonify({
+                'message': f'기기 상태가 "{status_text}"로 업데이트되었습니다.',
+                'device_id': device_id,
+                'is_used': is_used
+            }), 200
+        else:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 상태 업데이트 오류: {str(e)}")
+        return jsonify({'error': '기기 상태 업데이트 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/start', methods=['POST'])
+def start_device_rental():
+    """기기 대여 시작 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        start_latitude = data.get('start_latitude')
+        start_longitude = data.get('start_longitude')
+        
+        if not all([user_id, device_code, start_latitude, start_longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # 기기가 사용 가능한지 확인하고 위치 정보도 함께 가져오기
+        device_check_sql = text("""
+            SELECT is_used, location FROM device_info WHERE DEVICE_CODE = :device_code
+        """)
+        device = db.session.execute(device_check_sql, {'device_code': device_code}).mappings().first()
+        
+        if not device:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+        
+        if device['is_used'] == 1:
+            return jsonify({'error': '이미 사용 중인 기기입니다.'}), 409
+        
+        # device_use_log 테이블에 대여 시작 기록 (device_info의 location 사용)
+        start_rental_sql = text("""
+            INSERT INTO device_use_log (USER_ID, DEVICE_CODE, start_time, start_loc)
+            VALUES (:user_id, :device_code, NOW(), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
+        """)
+        
+        db.session.execute(start_rental_sql, {
+            'user_id': user_id,
+            'device_code': device_code
+        })
+        
+        # device_info 테이블의 is_used를 1로 변경
+        update_device_sql = text("""
+            UPDATE device_info SET is_used = 1 WHERE DEVICE_CODE = :device_code
+        """)
+        
+        db.session.execute(update_device_sql, {'device_code': device_code})
+        db.session.commit()
+        
+        return jsonify({
+            'message': '기기 대여가 시작되었습니다.',
+            'rental_id': f"{user_id}_{device_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 대여 시작 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 시작 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/realtime-log', methods=['POST'])
+def send_realtime_log():
+    """실시간 위치 로그 전송 API (10초마다 호출)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        print(f"실시간 로그 수신: user_id={user_id}, device_code={device_code}")
+        print(f"위치: lat={latitude}, lng={longitude}")
+        print(f"시간: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        if not all([user_id, device_code, latitude, longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # device_realtime_log 테이블에 실시간 로그 저장 (시간과 초까지 포함)
+        realtime_log_sql = text("""
+            INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
+            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
+        """)
+        
+        db.session.execute(realtime_log_sql, {
+            'device_code': device_code,
+            'user_id': user_id,
+            'latitude': latitude,
+            'longitude': longitude
+        })
+        
+        db.session.commit()
+        
+        print(f"실시간 로그 저장 완료: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        return jsonify({'message': '실시간 로그가 저장되었습니다.'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"실시간 로그 전송 오류: {str(e)}")
+        return jsonify({'error': '실시간 로그 전송 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/device-rental/end', methods=['POST'])
+def end_device_rental():
+    """기기 대여 종료 API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        device_code = data.get('device_code')
+        end_latitude = data.get('end_latitude')
+        end_longitude = data.get('end_longitude')
+        
+        print(f"대여 종료 요청 받음: user_id={user_id}, device_code={device_code}")
+        print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
+        
+        if not all([user_id, device_code, end_latitude, end_longitude]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # 대여 기록 조회
+        rental_check_sql = text("""
+            SELECT start_time, start_loc FROM device_use_log 
+            WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        rental = db.session.execute(rental_check_sql, {
+            'user_id': user_id,
+            'device_code': device_code
+        }).mappings().first()
+        
+        if not rental:
+            print(f"진행 중인 대여 기록을 찾을 수 없음: user_id={user_id}, device_code={device_code}")
+            return jsonify({'error': '진행 중인 대여 기록을 찾을 수 없습니다.'}), 404
+        
+        print(f"대여 기록 찾음: start_time={rental['start_time']}")
+        
+        # 사용 시간 계산 (초 단위)
+        start_time = rental['start_time']
+        end_time = datetime.now()
+        usage_seconds = int((end_time - start_time).total_seconds())
+        usage_minutes = usage_seconds // 60
+        
+        # 요금 계산 (10초마다 100원)
+        # 10초 단위로 올림 계산
+        fee_units = (usage_seconds + 9) // 10  # 10초 단위로 올림
+        fee = fee_units * 100
+        
+        print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초, 요금: {fee}원")
+        
+        # 이동 거리 계산 (Haversine 공식 사용)
+        start_lat = db.session.execute(text("SELECT ST_Y(start_loc) as lat FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                      {'user_id': user_id, 'device_code': device_code}).scalar()
+        start_lng = db.session.execute(text("SELECT ST_X(start_loc) as lng FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                      {'user_id': user_id, 'device_code': device_code}).scalar()
+        
+        # 거리 계산 함수 (Haversine 공식)
+        def calculate_distance(lat1, lon1, lat2, lon2):
+            from math import radians, cos, sin, asin, sqrt
+            
+            # 지구의 반지름 (km)
+            R = 6371
+            
+            # 위도, 경도를 라디안으로 변환
+            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+            
+            # Haversine 공식
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+            c = 2 * asin(sqrt(a))
+            distance = R * c
+            
+            return distance
+        
+        moved_distance = calculate_distance(start_lat, start_lng, end_latitude, end_longitude)
+        print(f"이동 거리: {moved_distance:.2f}km")
+        
+        # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
+        end_rental_sql = text("""
+            UPDATE device_use_log 
+            SET end_time = NOW(),
+                end_loc = ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326),
+                fee = :fee,
+                moved_distance = :moved_distance
+            WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        print("device_use_log 테이블 업데이트 시도...")
+        result1 = db.session.execute(end_rental_sql, {
+            'user_id': user_id,
+            'device_code': device_code,
+            'latitude': end_latitude,
+            'longitude': end_longitude,
+            'fee': fee,
+            'moved_distance': int(moved_distance * 1000)  # 미터 단위로 변환
+        })
+        print(f"device_use_log 업데이트 결과: {result1.rowcount}개 행이 업데이트됨")
+        
+        # device_info 테이블의 is_used를 0으로 변경
+        update_device_sql = text("""
+            UPDATE device_info SET is_used = 0 WHERE DEVICE_CODE = :device_code
+        """)
+        
+        print(f"기기 상태 업데이트 시도: device_code={device_code}")
+        result2 = db.session.execute(update_device_sql, {'device_code': device_code})
+        print(f"기기 상태 업데이트 결과: {result2.rowcount}개 행이 업데이트됨")
+        
+        if result2.rowcount == 0:
+            print(f"경고: device_code '{device_code}'에 해당하는 기기를 찾을 수 없습니다!")
+        else:
+            print(f"성공: device_code '{device_code}'의 is_used가 0으로 업데이트되었습니다.")
+        
+        db.session.commit()
+        print("데이터베이스 커밋 완료")
+        
+        return jsonify({
+            'message': '기기 대여가 종료되었습니다.',
+            'usage_minutes': usage_minutes,
+            'fee': fee,
+            'moved_distance': round(moved_distance, 2)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"기기 대여 종료 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 종료 중 오류가 발생했습니다.'}), 500
+
+
+
+
+@app.route('/api/device-rental/status/<device_code>', methods=['GET'])
+def get_device_rental_status(device_code):
+    """기기 대여 상태 확인 API"""
+    try:
+        # 기기 사용 상태 확인
+        device_sql = text("""
+            SELECT is_used, battery_level FROM device_info WHERE DEVICE_CODE = :device_code
+        """)
+        
+        device = db.session.execute(device_sql, {'device_code': device_code}).mappings().first()
+        
+        if not device:
+            return jsonify({'error': '기기를 찾을 수 없습니다.'}), 404
+        
+        # 현재 대여 중인지 확인
+        rental_sql = text("""
+            SELECT USER_ID, start_time FROM device_use_log 
+            WHERE DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        rental = db.session.execute(rental_sql, {'device_code': device_code}).mappings().first()
+        
+        return jsonify({
+            'device_code': device_code,
+            'is_used': bool(device['is_used']),
+            'battery_level': device['battery_level'],
+            'is_rented': rental is not None,
+            'rental_info': {
+                'user_id': rental['USER_ID'] if rental else None,
+                'start_time': rental['start_time'].isoformat() if rental else None
+            } if rental else None
+        }), 200
+        
+    except Exception as e:
+        print(f"기기 대여 상태 확인 오류: {str(e)}")
+        return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
+
+#####################################################################################
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
