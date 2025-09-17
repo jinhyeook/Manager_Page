@@ -1206,11 +1206,14 @@ def end_device_rental():
         
         print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초, 요금: {fee}원")
         
-        # 이동 거리 계산 (Haversine 공식 사용)
-        start_lat = db.session.execute(text("SELECT ST_Y(start_loc) as lat FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
-                                      {'user_id': user_id, 'device_code': device_code}).scalar()
-        start_lng = db.session.execute(text("SELECT ST_X(start_loc) as lng FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
-                                      {'user_id': user_id, 'device_code': device_code}).scalar()
+        # 이동 거리 계산 (Haversine 공식 사용) - 좌표 순서 수정
+        start_latitude = db.session.execute(text("SELECT ST_Y(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                          {'user_id': user_id, 'device_code': device_code}).scalar()
+        start_longitude = db.session.execute(text("SELECT ST_X(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                           {'user_id': user_id, 'device_code': device_code}).scalar()
+        
+        print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
+        print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
         
         # 거리 계산 함수 (Haversine 공식)
         def calculate_distance(lat1, lon1, lat2, lon2):
@@ -1231,7 +1234,8 @@ def end_device_rental():
             
             return distance
         
-        moved_distance = calculate_distance(start_lat, start_lng, end_latitude, end_longitude)
+        # 거리 계산 (위도, 경도 순서 정확히 맞춤)
+        moved_distance = calculate_distance(start_latitude, start_longitude, end_latitude, end_longitude)
         print(f"이동 거리: {moved_distance:.2f}km")
         
         # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
@@ -1323,6 +1327,132 @@ def get_device_rental_status(device_code):
     except Exception as e:
         print(f"기기 대여 상태 확인 오류: {str(e)}")
         return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
+
+
+@app.route('/api/report/auto-submit', methods=['POST'])
+def auto_submit_report():
+    """자동 신고 처리 API (헬멧 미착용 감지 시)"""
+    try:
+        data = request.get_json()
+        reporter_user_id = data.get('reporter_user_id')
+        violation_type = data.get('violation_type')
+        reporter_location = data.get('reporter_location')
+        report_time = data.get('report_time')
+        image_data = data.get('image_data')
+        
+        print(f"자동 신고 수신: reporter={reporter_user_id}, violation={violation_type}")
+        print(f"신고 위치: lat={reporter_location['latitude']}, lng={reporter_location['longitude']}")
+        print(f"신고 시간: {report_time}")
+        
+        if not all([reporter_user_id, violation_type, reporter_location, report_time]):
+            return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
+        
+        # report_case 결정
+        report_case = 0 if violation_type == 'total_nohelmet_multi' else 1
+        
+        # device_realtime_log에서 가장 가까운 사용자 찾기
+        reported_user_id, reported_device_code = find_closest_user(
+            reporter_location['latitude'], 
+            reporter_location['longitude'], 
+            report_time
+        )
+        
+        print(f"신고 대상: user_id={reported_user_id}, device_code={reported_device_code}")
+        
+        # report_log 테이블에 저장
+        report_sql = text("""
+            INSERT INTO report_log (
+                REPORTER_USER_ID, 
+                REPORTED_USER_ID,
+                REPORTED_DEVICE_CODE,
+                report_time, 
+                reporter_loc, 
+                reported_loc,
+                image, 
+                report_case,
+                is_verified
+            ) VALUES (
+                :reporter_user_id,
+                :reported_user_id,
+                :reported_device_code,
+                :report_time,
+                ST_GeomFromText(CONCAT('POINT(', :reporter_lat, ' ', :reporter_lng, ')'), 4326),
+                ST_GeomFromText(CONCAT('POINT(', :reported_lat, ' ', :reported_lng, ')'), 4326),
+                :image_data,
+                :report_case,
+                FALSE
+            )
+        """)
+        
+        db.session.execute(report_sql, {
+            'reporter_user_id': reporter_user_id,
+            'reported_user_id': reported_user_id,
+            'reported_device_code': reported_device_code,
+            'report_time': report_time,
+            'reporter_lat': reporter_location['latitude'],
+            'reporter_lng': reporter_location['longitude'],
+            'reported_lat': reporter_location['latitude'],  # 같은 위치로 가정
+            'reported_lng': reporter_location['longitude'],
+            'image_data': image_data,
+            'report_case': report_case
+        })
+        
+        db.session.commit()
+        print("자동 신고 저장 완료")
+        
+        return jsonify({
+            'message': '자동 신고가 성공적으로 저장되었습니다.',
+            'reported_user_id': reported_user_id,
+            'reported_device_code': reported_device_code
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"자동 신고 처리 오류: {str(e)}")
+        return jsonify({'error': '자동 신고 처리 중 오류가 발생했습니다.'}), 500
+
+def find_closest_user(reporter_lat, reporter_lng, report_time):
+    """device_realtime_log에서 가장 가까운 사용자 찾기"""
+    try:
+        # 시간과 위치를 기반으로 가장 가까운 사용자 찾기
+        closest_user_sql = text("""
+            SELECT 
+                USER_ID,
+                DEVICE_CODE,
+                ST_Y(location) as lat,
+                ST_X(location) as lng,
+                now_time,
+                (
+                    ST_Distance_Sphere(
+                        ST_GeomFromText(CONCAT('POINT(', :reporter_lat, ' ', :reporter_lng, ')'), 4326),
+                        location
+                    ) + 
+                    ABS(TIMESTAMPDIFF(SECOND, :report_time, now_time)) * 10
+                ) as distance_score
+            FROM device_realtime_log 
+            WHERE now_time BETWEEN 
+                DATE_SUB(:report_time, INTERVAL 5 MINUTE) AND 
+                DATE_ADD(:report_time, INTERVAL 5 MINUTE)
+            ORDER BY distance_score ASC
+            LIMIT 1
+        """)
+        
+        result = db.session.execute(closest_user_sql, {
+            'reporter_lat': reporter_lat,
+            'reporter_lng': reporter_lng,
+            'report_time': report_time
+        }).mappings().first()
+        
+        if result:
+            print(f"가장 가까운 사용자: {result['USER_ID']}, 기기: {result['DEVICE_CODE']}")
+            return result['USER_ID'], result['DEVICE_CODE']
+        else:
+            print("가까운 사용자를 찾을 수 없음")
+            return None, None
+            
+    except Exception as e:
+        print(f"가장 가까운 사용자 찾기 오류: {str(e)}")
+        return None, None
 
 #####################################################################################
 

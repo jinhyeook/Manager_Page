@@ -14,23 +14,11 @@ VALUES
 
 -- 2) 디바이스 샘플 데이터 (DEVICE_CODE는 트리거로 자동 생성)
 -- 위치는 POINT(lon, lat)
-INSERT INTO DEVICE_INFO (device_type, location, battery_level, is_used)
-VALUES
-('킥보드', POINT(126.9780, 37.5665), 85, 0),
-('킥보드', POINT(126.9760, 37.5645), 45, 0),
-('킥보드', POINT(126.9800, 37.5685), 15, 1),
-('자전거', POINT(126.9740, 37.5625), 92, 0),
-('자전거', POINT(126.9820, 37.5705), 73, 1),
-('킥보드', POINT(126.9523, 37.3693), 85, 0), 
-('킥보드', POINT(126.9505, 37.3688), 45, 0), 
-('킥보드', POINT(126.9531, 37.3705), 15, 1), 
-('자전거', POINT(126.9510, 37.3712), 92, 0), 
-('자전거', POINT(126.9498, 37.3675), 73, 1), 
-('킥보드', POINT(126.9515, 37.3942), 85, 0),
-('킥보드', POINT(126.9500, 37.3955), 45, 0),
-('킥보드', POINT(126.9530, 37.3930), 15, 1),
-('자전거', POINT(126.9495, 37.3960), 92, 0),
-('자전거', POINT(126.9525, 37.3925), 73, 1);
+INSERT INTO device_info (DEVICE_CODE, device_type, location, battery_level, is_used, created_at) VALUES
+('0250918001', '킥보드', ST_GeomFromText('POINT(37.3995 126.9265)', 4326), 91, 0, '2025-09-18'),
+('1250918001', '자전거', ST_GeomFromText('POINT(37.3988 126.9258)', 4326), 82, 0, '2025-09-18'),
+('0250918002', '킥보드', ST_GeomFromText('POINT(37.4001 126.9269)', 4326), 77, 0, '2025-09-18');
+
 
 -- 방금 삽입된 각 디바이스의 생성된 코드 캡처 (동일 날짜 기준으로 최신순)
 SET @kick1 := (
@@ -84,3 +72,5 @@ INSERT INTO REPORT_LOG (
 -- SELECT * FROM REPORT_LOG;
 
 
+--SET SQL_SAFE_UPDATES = 0;
+--DELETE FROM device_use_log;
