@@ -184,7 +184,7 @@ function initMap() {
     }).addTo(map);
     
     // 디바이스 마커 추가
-    $.get('/api/devices', function(devices) {
+    $.get('/api/web/devices', function(devices) {
         devices.forEach(device => {
             const batteryColor = device.battery_level > 50 ? 'green' : 
                                device.battery_level > 20 ? 'orange' : 'red';

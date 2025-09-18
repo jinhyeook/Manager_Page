@@ -94,13 +94,29 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <style>
     .report-image {
         max-width: 100%;
+        max-height: 300px;
+        width: auto;
         height: auto;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transform: rotate(90deg) !important; /* 강제 90도 회전 */
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    .report-image-container {
+        width: 100%;
+        height: 300px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-radius: 8px;
     }
     .status-badge {
         font-size: 0.8em;
@@ -110,6 +126,20 @@
         height: 200px;
         width: 100%;
         border-radius: 8px;
+        min-height: 200px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        position: relative;
+    }
+    
+    .report-location-map:empty::before {
+        content: "지도를 불러오는 중...";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #6c757d;
+        font-size: 14px;
     }
     .table-hover tbody tr:hover {
         background-color: rgba(0,0,0,0.05);
@@ -119,6 +149,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
 let reports = [];
@@ -144,6 +175,7 @@ const reportTypeText = {
     'no_helmet_multi': '헬멧 착용 및 다인 탑승'
 };
 
+
 $(document).ready(function() {
     loadReports();
     
@@ -157,6 +189,25 @@ $(document).ready(function() {
         loadReports();
     }, 30000);
 });
+
+// 이미지 회전 수정 함수 (강제 회전)
+function fixImageOrientation(img) {
+    // 이미지가 완전히 로드될 때까지 대기
+    if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+        setTimeout(() => fixImageOrientation(img), 100);
+        return;
+    }
+    
+    console.log('이미지 원본 크기:', img.naturalWidth, img.naturalHeight);
+    
+    // 모든 이미지에 90도 회전 적용 (임시 해결책)
+    img.style.transform = 'rotate(90deg)';
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '400px';
+    img.style.objectFit = 'contain';
+    
+    console.log('이미지 90도 회전 적용 완료');
+}
 
 function loadReports() {
     $.get('/api/reports', function(data) {
@@ -214,9 +265,11 @@ function showReportDetail(reportId) {
     selectedReport = report;
     
     // 신고 사진 표시
-    if (report.image_path) {
+    if (report.image_data) {
         $('#reportImage').html(`
-            <img src="${report.image_path}" alt="신고 사진" class="report-image">
+            <div class="report-image-container">
+                <img src="data:image/jpeg;base64,${report.image_data}" alt="신고 사진" class="report-image" onload="fixImageOrientation(this)">
+            </div>
         `);
     } else {
         $('#reportImage').html(`
@@ -229,26 +282,152 @@ function showReportDetail(reportId) {
     
     // 신고 위치 지도 표시
     if (report.latitude && report.longitude) {
-        $('#reportLocation').html('<div id="locationMap" class="report-location-map"></div>');
+        console.log('지도 표시 시작:', report.latitude, report.longitude);
         
-        // 기존 지도 제거
+        // 기존 지도 완전히 제거
         if (locationMap) {
             locationMap.remove();
+            locationMap = null;
         }
         
-        // 새 지도 생성
+        // 지도 컨테이너 HTML 생성
+        $('#reportLocation').html(`
+            <div id="locationMap" class="report-location-map"></div>
+            <div class="mt-2 text-center">
+                <small class="text-muted">위도: ${report.latitude.toFixed(6)}, 경도: ${report.longitude.toFixed(6)}</small>
+            </div>
+        `);
+        
+        // 새 지도 생성 (DOM이 완전히 렌더링된 후)
         setTimeout(() => {
-            locationMap = L.map('locationMap').setView([report.latitude, report.longitude], 15);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(locationMap);
-            
-            L.marker([report.latitude, report.longitude])
-                .bindPopup(`신고 위치<br>${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`)
-                .addTo(locationMap);
-        }, 100);
+            try {
+                // 지도 컨테이너가 존재하는지 확인
+                const mapContainer = document.getElementById('locationMap');
+                if (!mapContainer) {
+                    console.error('지도 컨테이너를 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // Leaflet이 로드되었는지 확인
+                if (typeof L === 'undefined') {
+                    console.error('Leaflet 라이브러리가 로드되지 않았습니다.');
+                    $('#reportLocation').html(`
+                        <div class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-2"></i>
+                            <p>지도 라이브러리를 불러올 수 없습니다.</p>
+                        </div>
+                    `);
+                    return;
+                }
+                
+                console.log('Leaflet 라이브러리 로드 완료');
+                console.log('지도 컨테이너 크기:', mapContainer.offsetWidth, mapContainer.offsetHeight);
+                
+                // 기존 지도 완전히 제거
+                if (locationMap) {
+                    locationMap.remove();
+                    locationMap = null;
+                }
+                
+                // Leaflet 지도 초기화
+                locationMap = L.map('locationMap', {
+                    center: [report.latitude, report.longitude],
+                    zoom: 15,
+                    zoomControl: true,
+                    preferCanvas: false
+                });
+                
+                // 여러 타일 서버 시도
+                const tileLayers = [
+                    {
+                        name: 'OpenStreetMap',
+                        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        attribution: '© OpenStreetMap contributors',
+                        subdomains: ['a', 'b', 'c']
+                    },
+                    {
+                        name: 'CartoDB',
+                        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                        attribution: '© OpenStreetMap contributors © CARTO',
+                        subdomains: ['a', 'b', 'c', 'd']
+                    },
+                    {
+                        name: 'Stamen',
+                        url: 'https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.png',
+                        attribution: 'Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap contributors',
+                        subdomains: ['a', 'b', 'c', 'd']
+                    }
+                ];
+                
+                // 첫 번째 타일 레이어 추가
+                const tileLayer = L.tileLayer(tileLayers[0].url, {
+                    attribution: tileLayers[0].attribution,
+                    maxZoom: 18,
+                    minZoom: 1,
+                    subdomains: tileLayers[0].subdomains
+                });
+                
+                tileLayer.addTo(locationMap);
+                
+                // 타일 로드 실패 시 다른 서버로 전환
+                tileLayer.on('tileerror', function(e) {
+                    console.error('타일 로드 실패, 다른 서버로 전환:', e);
+                    
+                    // 현재 타일 레이어 제거
+                    locationMap.removeLayer(tileLayer);
+                    
+                    // 다음 타일 서버 시도
+                    const currentIndex = tileLayers.findIndex(layer => layer.url === tileLayer._url);
+                    const nextIndex = (currentIndex + 1) % tileLayers.length;
+                    const nextLayer = tileLayers[nextIndex];
+                    
+                    const newTileLayer = L.tileLayer(nextLayer.url, {
+                        attribution: nextLayer.attribution,
+                        maxZoom: 18,
+                        minZoom: 1,
+                        subdomains: nextLayer.subdomains
+                    });
+                    
+                    newTileLayer.addTo(locationMap);
+                    console.log(`타일 서버 변경: ${nextLayer.name}`);
+                });
+                
+                // 마커 추가
+                const marker = L.marker([report.latitude, report.longitude])
+                    .bindPopup(`
+                        <div>
+                            <strong>신고 위치</strong><br>
+                            위도: ${report.latitude.toFixed(6)}<br>
+                            경도: ${report.longitude.toFixed(6)}
+                        </div>
+                    `)
+                    .addTo(locationMap);
+                
+                // 마커 자동으로 팝업 열기
+                marker.openPopup();
+                
+                // 지도 크기 조정
+                setTimeout(() => {
+                    if (locationMap) {
+                        locationMap.invalidateSize();
+                        console.log('지도 크기 조정 완료');
+                    }
+                }, 100);
+                
+                console.log('Leaflet 지도 생성 완료');
+            } catch (error) {
+                console.error('지도 생성 오류:', error);
+                $('#reportLocation').html(`
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-2"></i>
+                        <p>지도를 불러올 수 없습니다.</p>
+                        <small>오류: ${error.message}</small>
+                    </div>
+                `);
+            }
+        }, 500);
     } else {
+        console.log('위치 정보 없음:', report.latitude, report.longitude);
         $('#reportLocation').html(`
             <div class="text-center text-muted">
                 <i class="fas fa-map-marker-alt fa-3x mb-2"></i>
@@ -303,11 +482,13 @@ function showReportModal(reportId) {
                 </div>
             </div>
         </div>
-        ${report.image_path ? `
+        ${report.image_data ? `
         <div class="row mt-3">
             <div class="col-12">
                 <label class="form-label"><strong>신고 사진</strong></label>
-                <img src="${report.image_path}" alt="신고 사진" class="img-fluid rounded">
+                <div class="report-image-container">
+                    <img src="data:image/jpeg;base64,${report.image_data}" alt="신고 사진" class="report-image" onload="fixImageOrientation(this)">
+                </div>
             </div>
         </div>
         ` : ''}

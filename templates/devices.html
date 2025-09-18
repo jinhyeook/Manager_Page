@@ -130,7 +130,7 @@ function initMap() {
 
 function loadDevices() {
     console.log('loadDevices 호출됨 - 디바이스 목록 로딩 시작');
-    $.get('/api/devices', function(devices) {
+    $.get('/api/web/devices', function(devices) {
         console.log('API에서 받은 디바이스 목록:', devices);
         
         // 기존 마커 제거
@@ -204,7 +204,7 @@ function showDeviceInfo(device) {
 
 function showDeviceModal(deviceId) {
     console.log('showDeviceModal 호출됨, deviceId:', deviceId);
-    $.get(`/api/devices/${deviceId}`, function(device) {
+    $.get(`/api/web/devices/${deviceId}`, function(device) {
         console.log('API 응답 받음:', device);
         // selectedDevice 변수 설정
         selectedDevice = device;
@@ -268,7 +268,7 @@ function showDeviceModal(deviceId) {
 
 
 function loadLowBatteryDevices() {
-    $.get('/api/devices', function(devices) {
+    $.get('/api/web/devices', function(devices) {
         const lowBatteryDevices = devices.filter(device => device.battery_level < 20);
         
         let html = '';

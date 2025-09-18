@@ -344,6 +344,76 @@ def get_devices():
         })
     return jsonify(result)
 
+# 웹 관리자 페이지 전용 API (좌표 순서 수정)
+@app.route('/api/web/devices')
+def get_web_devices():
+    sql = text(
+        """
+        SELECT 
+            DEVICE_CODE,
+            ST_X(location) AS latitude,
+            ST_Y(location) AS longitude,
+            battery_level,
+            is_used,
+            created_at
+        FROM DEVICE_INFO
+        """
+    )
+    rows = db.session.execute(sql).mappings().all()
+    # 프론트 호환: id는 일련번호로 제공
+    result = []
+    for idx, r in enumerate(rows, start=1):
+        # is_used 값을 상태로 변환 (기본값은 available)
+        status = 'available'
+        if r['is_used'] == 1:
+            status = 'in_use'
+        
+        result.append({
+            'id': idx,
+            'device_id': r['DEVICE_CODE'],
+            'latitude': float(r['latitude']) if r['latitude'] is not None else None,
+            'longitude': float(r['longitude']) if r['longitude'] is not None else None,
+            'battery_level': r['battery_level'],
+            'status': status,
+            'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+        })
+    return jsonify(result)
+
+# 웹 관리자 페이지 전용 개별 디바이스 API (좌표 순서 수정)
+@app.route('/api/web/devices/<device_id>')
+def get_web_device(device_id):
+    sql = text(
+        """
+        SELECT 
+            DEVICE_CODE,
+            ST_X(location) AS latitude,
+            ST_Y(location) AS longitude,
+            battery_level,
+            is_used,
+            created_at
+        FROM DEVICE_INFO
+        WHERE DEVICE_CODE = :device_code
+        """
+    )
+    r = db.session.execute(sql, { 'device_code': device_id }).mappings().first()
+    if not r:
+        return jsonify({'error': 'Device not found'}), 404
+    
+    # is_used 값을 상태로 변환 (기본값은 available)
+    status = 'available'
+    if r['is_used'] == 1:
+        status = 'in_use'
+    
+    return jsonify({
+        'id': 1,
+        'device_id': r['DEVICE_CODE'],
+        'latitude': float(r['latitude']) if r['latitude'] is not None else None,
+        'longitude': float(r['longitude']) if r['longitude'] is not None else None,
+        'battery_level': r['battery_level'],
+        'status': status,
+        'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+    })
+
 @app.route('/api/devices/<device_id>')
 def get_device(device_id):
     sql = text(
@@ -386,11 +456,12 @@ def get_reports():
             REPORTED_DEVICE_CODE AS device_id,
             REPORTER_USER_ID AS reporter_user_id,
             REPORTED_USER_ID AS reported_user_id,
-            ST_Y(COALESCE(reported_loc, reporter_loc)) AS latitude,
-            ST_X(COALESCE(reported_loc, reporter_loc)) AS longitude,
+            ST_X(COALESCE(reported_loc, reporter_loc)) AS latitude,
+            ST_Y(COALESCE(reported_loc, reporter_loc)) AS longitude,
             report_time,
             is_verified,
-            report_case
+            report_case,
+            image
         FROM REPORT_LOG
         ORDER BY report_time DESC
         """
@@ -409,13 +480,27 @@ def get_reports():
         elif r['report_case'] == 2:
             report_type = 'no_helmet_multi'
         
+        # 이미지 데이터 처리
+        image_data = None
+        if r['image']:
+            try:
+                # 이미지 데이터를 Base64로 인코딩
+                if isinstance(r['image'], bytes):
+                    image_data = base64.b64encode(r['image']).decode('utf-8')
+                elif isinstance(r['image'], str):
+                    # 이미 Base64 문자열인 경우
+                    image_data = r['image']
+            except Exception as e:
+                print(f"이미지 인코딩 오류: {str(e)}")
+                image_data = None
+        
         result.append({
             'id': idx,
             'device_id': r['device_id'],
             'user_id': r['reporter_user_id'],
             'report_type': report_type,
             'description': '',
-            'image_path': None,
+            'image_data': image_data,  # Base64 인코딩된 이미지 데이터
             'latitude': float(r['latitude']) if r['latitude'] is not None else None,
             'longitude': float(r['longitude']) if r['longitude'] is not None else None,
             'report_date': r['report_time'].isoformat() if r['report_time'] else None,
@@ -686,9 +771,9 @@ def get_statistics():
     location_sql = text("""
         SELECT 
             CASE 
-                WHEN ST_Y(location) BETWEEN 37.413 AND 37.715 AND ST_X(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
-                WHEN ST_Y(location) BETWEEN 37.0 AND 38.5 AND ST_X(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
-                WHEN ST_Y(location) BETWEEN 37.2 AND 37.8 AND ST_X(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
+                WHEN ST_X(location) BETWEEN 37.413 AND 37.715 AND ST_Y(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
+                WHEN ST_X(location) BETWEEN 37.0 AND 38.5 AND ST_Y(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
+                WHEN ST_X(location) BETWEEN 37.2 AND 37.8 AND ST_Y(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
                 ELSE '기타 지역'
             END as district,
             COUNT(*) as count
@@ -696,9 +781,9 @@ def get_statistics():
         WHERE location IS NOT NULL
         GROUP BY 
             CASE 
-                WHEN ST_Y(location) BETWEEN 37.413 AND 37.715 AND ST_X(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
-                WHEN ST_Y(location) BETWEEN 37.0 AND 38.5 AND ST_X(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
-                WHEN ST_Y(location) BETWEEN 37.2 AND 37.8 AND ST_X(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
+                WHEN ST_X(location) BETWEEN 37.413 AND 37.715 AND ST_Y(location) BETWEEN 126.764 AND 127.135 THEN '서울시'
+                WHEN ST_X(location) BETWEEN 37.0 AND 38.5 AND ST_Y(location) BETWEEN 126.0 AND 128.0 THEN '경기도'
+                WHEN ST_X(location) BETWEEN 37.2 AND 37.8 AND ST_Y(location) BETWEEN 126.3 AND 127.0 THEN '인천시'
                 ELSE '기타 지역'
             END
         ORDER BY count DESC
@@ -1207,9 +1292,9 @@ def end_device_rental():
         print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초, 요금: {fee}원")
         
         # 이동 거리 계산 (Haversine 공식 사용) - 좌표 순서 수정
-        start_latitude = db.session.execute(text("SELECT ST_Y(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_latitude = db.session.execute(text("SELECT ST_X(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                           {'user_id': user_id, 'device_code': device_code}).scalar()
-        start_longitude = db.session.execute(text("SELECT ST_X(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_longitude = db.session.execute(text("SELECT ST_Y(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                            {'user_id': user_id, 'device_code': device_code}).scalar()
         
         print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
@@ -1234,7 +1319,7 @@ def end_device_rental():
             
             return distance
         
-        # 거리 계산 (위도, 경도 순서 정확히 맞춤)
+        # 거리 계산 (좌표 순서 수정: 시작/종료 위치 모두 올바른 순서로 가져옴)
         moved_distance = calculate_distance(start_latitude, start_longitude, end_latitude, end_longitude)
         print(f"이동 거리: {moved_distance:.2f}km")
         
@@ -1329,9 +1414,9 @@ def get_device_rental_status(device_code):
         return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
 
 
-@app.route('/api/report/auto-submit', methods=['POST'])
-def auto_submit_report():
-    """자동 신고 처리 API (헬멧 미착용 감지 시)"""
+@app.route('/api/report/manual-submit', methods=['POST'])
+def manual_submit_report():
+    """수동 신고 처리 API (헬멧 미착용 감지 시)"""
     try:
         data = request.get_json()
         reporter_user_id = data.get('reporter_user_id')
@@ -1340,7 +1425,7 @@ def auto_submit_report():
         report_time = data.get('report_time')
         image_data = data.get('image_data')
         
-        print(f"자동 신고 수신: reporter={reporter_user_id}, violation={violation_type}")
+        print(f"수동 신고 수신: reporter={reporter_user_id}, violation={violation_type}")
         print(f"신고 위치: lat={reporter_location['latitude']}, lng={reporter_location['longitude']}")
         print(f"신고 시간: {report_time}")
         
@@ -1350,11 +1435,12 @@ def auto_submit_report():
         # report_case 결정
         report_case = 0 if violation_type == 'total_nohelmet_multi' else 1
         
-        # device_realtime_log에서 가장 가까운 사용자 찾기
+        # device_realtime_log에서 가장 가까운 사용자 찾기 (신고자 제외)
         reported_user_id, reported_device_code = find_closest_user(
             reporter_location['latitude'], 
             reporter_location['longitude'], 
-            report_time
+            report_time,
+            reporter_user_id  # 신고자 ID 추가
         )
         
         print(f"신고 대상: user_id={reported_user_id}, device_code={reported_device_code}")
@@ -1398,23 +1484,23 @@ def auto_submit_report():
         })
         
         db.session.commit()
-        print("자동 신고 저장 완료")
+        print("수동 신고 저장 완료")
         
         return jsonify({
-            'message': '자동 신고가 성공적으로 저장되었습니다.',
+            'message': '수동 신고가 성공적으로 저장되었습니다.',
             'reported_user_id': reported_user_id,
             'reported_device_code': reported_device_code
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        print(f"자동 신고 처리 오류: {str(e)}")
-        return jsonify({'error': '자동 신고 처리 중 오류가 발생했습니다.'}), 500
+        print(f"수동 신고 처리 오류: {str(e)}")
+        return jsonify({'error': '수동 신고 처리 중 오류가 발생했습니다.'}), 500
 
-def find_closest_user(reporter_lat, reporter_lng, report_time):
-    """device_realtime_log에서 가장 가까운 사용자 찾기"""
+def find_closest_user(reporter_lat, reporter_lng, report_time, reporter_user_id):
+    """device_realtime_log에서 가장 가까운 사용자 찾기 (신고자 제외)"""
     try:
-        # 시간과 위치를 기반으로 가장 가까운 사용자 찾기
+        # 시간과 위치를 기반으로 가장 가까운 사용자 찾기 (신고자 제외)
         closest_user_sql = text("""
             SELECT 
                 USER_ID,
@@ -1433,6 +1519,7 @@ def find_closest_user(reporter_lat, reporter_lng, report_time):
             WHERE now_time BETWEEN 
                 DATE_SUB(:report_time, INTERVAL 5 MINUTE) AND 
                 DATE_ADD(:report_time, INTERVAL 5 MINUTE)
+            AND USER_ID != :reporter_user_id  -- 신고자 제외
             ORDER BY distance_score ASC
             LIMIT 1
         """)
@@ -1440,14 +1527,15 @@ def find_closest_user(reporter_lat, reporter_lng, report_time):
         result = db.session.execute(closest_user_sql, {
             'reporter_lat': reporter_lat,
             'reporter_lng': reporter_lng,
-            'report_time': report_time
+            'report_time': report_time,
+            'reporter_user_id': reporter_user_id  # 신고자 ID 추가
         }).mappings().first()
         
         if result:
             print(f"가장 가까운 사용자: {result['USER_ID']}, 기기: {result['DEVICE_CODE']}")
             return result['USER_ID'], result['DEVICE_CODE']
         else:
-            print("가까운 사용자를 찾을 수 없음")
+            print("가까운 사용자를 찾을 수 없음 (신고자 제외)")
             return None, None
             
     except Exception as e:
