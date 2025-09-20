@@ -62,7 +62,7 @@ CREATE TABLE report_log (
     report_case INT,
     reporter_loc POINT,
     reported_loc POINT,
-    image blob,
+    image LONGTEXT,
     is_verified BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (REPORTER_USER_ID) REFERENCES user_info(USER_ID),
     FOREIGN KEY (REPORTED_USER_ID) REFERENCES user_info(USER_ID),
