@@ -1,6 +1,5 @@
 use kick;
 
--- 사용자 정보 테이블 (USER_INFO) - Age 자동 계산 적용
 CREATE TABLE user_info (
     USER_ID VARCHAR(50) NOT NULL,
     user_pw VARCHAR(255) NOT NULL,

@@ -11,6 +11,17 @@ import hashlib
 import uuid
 import re
 
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.schema.output_parser import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHistory
+from langchain.memory import ChatMessageHistory
+from dotenv import load_dotenv
+
+
 app = Flask(__name__)
 
 db_username = os.getenv('DB_USERNAME', 'root')
@@ -25,71 +36,7 @@ app.secret_key = 'your-secret-key-here'
 db = SQLAlchemy(app)
 CORS(app)
 
-# 비밀번호 해싱 함수
-def hash_password(password):
-    """비밀번호를 SHA-256으로 해싱"""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-# 이메일 유효성 검사 함수
-def is_valid_email(email):
-    """이메일 형식 유효성 검사"""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-# 전화번호 유효성 검사 함수
-def is_valid_phone(phone):
-    """한국 전화번호 형식 유효성 검사"""
-    pattern = r'^01[0-9]-?[0-9]{4}-?[0-9]{4}$'
-    return re.match(pattern, phone) is not None
-
-# 생년월일 유효성 검사 함수
-def is_valid_birth(birth):
-    """생년월일 형식 유효성 검사 (YYYY-MM-DD)"""
-    pattern = r'^\d{4}-\d{2}-\d{2}$'
-    if not re.match(pattern, birth):
-        return False
-    
-    try:
-        datetime.strptime(birth, '%Y-%m-%d')
-        return True
-    except ValueError:
-        return False
-
-# 주민번호 유효성 검사 함수
-def is_valid_ssn(ssn):
-    """주민번호 형식 유효성 검사 (XXXXXX-XXXXXXX)"""
-    pattern = r'^\d{6}-\d{7}$'
-    if not re.match(pattern, ssn):
-        return False
-    
-    # 주민번호 체크섬 검증 (간단한 버전)
-    try:
-        # 앞 6자리 (생년월일)
-        birth_part = ssn[:6]
-        # 뒤 7자리 (성별코드 + 지역코드 + 일련번호 + 체크섬)
-        id_part = ssn[7:]
-        
-        # 생년월일 유효성 검사
-        year = int(birth_part[:2])
-        month = int(birth_part[2:4])
-        day = int(birth_part[4:6])
-        
-        # 1900년대 또는 2000년대 판단
-        if year >= 0 and year <= 99:
-            if int(id_part[0]) <= 2:  # 1, 2로 시작하면 1900년대
-                year += 1900
-            else:  # 3, 4로 시작하면 2000년대
-                year += 2000
-        
-        # 날짜 유효성 검사
-        from datetime import datetime
-        datetime(year, month, day)
-        
-        return True
-    except (ValueError, IndexError):
-        return False
-
-############################ 관리자 웹페이지 #########################
+############################ 관리자 웹페이지 매핑 api들 #########################
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -103,248 +50,13 @@ def reports():
     return render_template('reports.html')
 
 @app.route('/users')
-def users():
+def users():ㅇ
     return render_template('users.html')
 
 @app.route('/statistics')
 def statistics():
     return render_template('statistics.html')
 
-############################ 인증 관련 API #########################
-
-@app.route('/api/auth/register', methods=['POST'])
-def register():
-    """회원가입 API"""
-    try:
-        data = request.get_json()
-        
-        # 필수 필드 검증 (ssn 추가)
-        required_fields = ['username', 'email', 'password', 'phone', 'birth', 'ssn', 'driver_license']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'{field}는 필수 입력 항목입니다.'}), 400
-        
-        # 이메일 형식 검증
-        if not is_valid_email(data['email']):
-            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
-        
-        # 전화번호 형식 검증
-        if not is_valid_phone(data['phone']):
-            return jsonify({'error': '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'}), 400
-        
-        # 생년월일 형식 검증
-        if not is_valid_birth(data['birth']):
-            return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
-        
-        # 주민번호 형식 검증 (새로 추가)
-        if not is_valid_ssn(data['ssn']):
-            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
-        
-        # 비밀번호 길이 검증
-        if len(data['password']) < 6:
-            return jsonify({'error': '비밀번호는 최소 6자 이상이어야 합니다.'}), 400
-        
-        # 이메일 중복 검사
-        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
-        email_exists = db.session.execute(email_check_sql, {'email': data['email']}).scalar()
-        
-        if email_exists > 0:
-            return jsonify({'error': '이미 사용 중인 이메일입니다.'}), 409
-        
-        # 주민번호 중복 검사 (새로 추가)
-        ssn_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE personal_number = :ssn")
-        ssn_exists = db.session.execute(ssn_check_sql, {'ssn': data['ssn']}).scalar()
-        
-        if ssn_exists > 0:
-            return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
-        
-        # 사용자 ID 생성
-        user_id = f"user_{uuid.uuid4().hex[:8]}"
-        
-        # 기존 데이터와 호환성을 위해 평문으로 저장
-        plain_password = data['password']
-        
-        # 나이 계산
-        birth_date = datetime.strptime(data['birth'], '%Y-%m-%d')
-        today = datetime.now()
-        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-        
-        # 사용자 정보 삽입 (personal_number 컬럼 추가)
-        insert_sql = text("""
-            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
-            VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :ssn, :driver_license, :sign_up_date, 0)
-        """)
-        
-        db.session.execute(insert_sql, {
-            'user_id': user_id,
-            'name': data['username'],
-            'email': data['email'],
-            'password': plain_password,
-            'phone': data['phone'],
-            'birth': data['birth'],
-            'age': age,
-            'sex': data.get('sex', 'M'),  # 기본값: 남성
-            'ssn': data['ssn'],  # 주민번호 추가
-            'driver_license': data['driver_license'],
-            'sign_up_date': datetime.now()
-        })
-        
-        db.session.commit()
-        
-        return jsonify({
-            'message': '회원가입이 완료되었습니다.',
-            'user_id': user_id,
-            'username': data['username']
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"회원가입 오류: {str(e)}")
-        return jsonify({'error': '회원가입 중 오류가 발생했습니다.'}), 500
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    """로그인 API"""
-    try:
-        data = request.get_json()
-        
-        # 필수 필드 검증
-        if not data.get('email') or not data.get('password'):
-            return jsonify({'error': '이메일과 비밀번호를 입력해주세요.'}), 400
-        
-        # 사용자 정보 조회 (실제 테이블 구조에 맞게 수정)
-        # 기존 데이터는 평문 비밀번호로 저장되어 있으므로 평문으로 비교
-        login_sql = text("""
-            SELECT USER_ID, name, email, phone, birth, age, sex, driver_license_number, sign_up_date, is_delete, user_pw
-            FROM USER_INFO 
-            WHERE email = :email
-        """)
-        
-        user = db.session.execute(login_sql, {
-            'email': data['email']
-        }).mappings().first()
-        
-        # 비밀번호 확인 (평문 비교)
-        if not user or user['user_pw'] != data['password']:
-            user = None
-        
-        if not user:
-            return jsonify({'error': '이메일 또는 비밀번호가 올바르지 않습니다.'}), 401
-        
-        # 탈퇴한 사용자 확인
-        if user['is_delete'] == 1:
-            return jsonify({'error': '탈퇴한 계정입니다.'}), 401
-        
-        # 로그인 성공 시 사용자 정보 반환
-        return jsonify({
-            'message': '로그인 성공',
-            'user': {
-                'user_id': user['USER_ID'],
-                'username': user['name'],
-                'email': user['email'],
-                'phone': user['phone'],
-                'birth': user['birth'].isoformat() if user['birth'] else None,
-                'age': user['age'],
-                'sex': user['sex'],
-                'driver_license': user['driver_license_number'],
-                'sign_up_date': user['sign_up_date'].isoformat() if user['sign_up_date'] else None
-            }
-        }), 200
-        
-    except Exception as e:
-        print(f"로그인 오류: {str(e)}")
-        return jsonify({'error': '로그인 중 오류가 발생했습니다.'}), 500
-
-@app.route('/api/auth/check-email', methods=['POST'])
-def check_email():
-    """이메일 중복 확인 API"""
-    try:
-        data = request.get_json()
-        email = data.get('email')
-        
-        if not email:
-            return jsonify({'error': '이메일을 입력해주세요.'}), 400
-        
-        if not is_valid_email(email):
-            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
-        
-        # 이메일 중복 검사
-        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
-        email_exists = db.session.execute(email_check_sql, {'email': email}).scalar()
-        
-        if email_exists > 0:
-            return jsonify({'available': False, 'message': '이미 사용 중인 이메일입니다.'}), 409
-        else:
-            return jsonify({'available': True, 'message': '사용 가능한 이메일입니다.'}), 200
-            
-    except Exception as e:
-        print(f"이메일 확인 오류: {str(e)}")
-        return jsonify({'error': '이메일 확인 중 오류가 발생했습니다.'}), 500
-
-@app.route('/api/auth/verify-license', methods=['POST'])
-def verify_license():
-    """운전면허증 번호 유효성 검사 API"""
-    try:
-        data = request.get_json()
-        license_number = data.get('driver_license')
-        
-        if not license_number:
-            return jsonify({'error': '운전면허증 번호를 입력해주세요.'}), 400
-        
-        # 운전면허증 번호 형식 검증 (한국 형식: 12-34-567890-12)
-        pattern = r'^\d{2}-\d{2}-\d{6}-\d{2}$'
-        if not re.match(pattern, license_number):
-            return jsonify({'error': '올바른 운전면허증 번호 형식이 아닙니다. (예: 12-34-567890-12)'}), 400
-        
-        # 중복 확인
-        license_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE driver_license_number = :license")
-        license_exists = db.session.execute(license_check_sql, {'license': license_number}).scalar()
-        
-        if license_exists > 0:
-            return jsonify({'available': False, 'message': '이미 등록된 운전면허증 번호입니다.'}), 409
-        else:
-            return jsonify({'available': True, 'message': '사용 가능한 운전면허증 번호입니다.'}), 200
-            
-    except Exception as e:
-        print(f"운전면허증 확인 오류: {str(e)}")
-        return jsonify({'error': '운전면허증 확인 중 오류가 발생했습니다.'}), 500
-
-# API 엔드포인트 (rAider 스키마 매핑)
-@app.route('/api/devices')
-def get_devices():
-    sql = text(
-        """
-        SELECT 
-            DEVICE_CODE,
-            ST_Y(location) AS latitude,
-            ST_X(location) AS longitude,
-            battery_level,
-            is_used,
-            created_at
-        FROM DEVICE_INFO
-        """
-    )
-    rows = db.session.execute(sql).mappings().all()
-    # 프론트 호환: id는 일련번호로 제공
-    result = []
-    for idx, r in enumerate(rows, start=1):
-        # is_used 값을 상태로 변환 (기본값은 available)
-        status = 'available'
-        if r['is_used'] == 1:
-            status = 'in_use'
-        
-        result.append({
-            'id': idx,
-            'device_id': r['DEVICE_CODE'],
-            'latitude': float(r['latitude']) if r['latitude'] is not None else None,
-            'longitude': float(r['longitude']) if r['longitude'] is not None else None,
-            'battery_level': r['battery_level'],
-            'status': status,
-            'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
-        })
-    return jsonify(result)
-
-# 웹 관리자 페이지 전용 API (좌표 순서 수정)
 @app.route('/api/web/devices')
 def get_web_devices():
     sql = text(
@@ -796,8 +508,7 @@ def get_statistics():
             CASE 
                 WHEN report_case = 0 THEN '헬멧 미착용 및 다인 탑승'
                 WHEN report_case = 1 THEN '헬멧 미착용 및 1인 탑승'
-                WHEN report_case = 2 THEN '헬멧 착용 및 다인 탑승'
-                ELSE '헬멧 미착용 및 다인 탑승'
+                ELSE '신고 유형 탐지 실패'
             END as report_type,
             COUNT(*) as count
         FROM REPORT_LOG
@@ -805,8 +516,7 @@ def get_statistics():
             CASE 
                 WHEN report_case = 0 THEN '헬멧 미착용 및 다인 탑승'
                 WHEN report_case = 1 THEN '헬멧 미착용 및 1인 탑승'
-                WHEN report_case = 2 THEN '헬멧 착용 및 다인 탑승'
-                ELSE '헬멧 미착용 및 다인 탑승'
+                ELSE '신고 유형 탐지 실패'
             END
         ORDER BY count DESC
     """)
@@ -838,13 +548,14 @@ def get_statistics():
         'pending_reports': int(pending_reports or 0)
     })
 
-########################################### 앱 페이지 #############################################
-# 🔑 클로바 OCR API 키와 URL (본인 키로 교체!)
-OCR_ENDPOINT_URL = "https://uc896l7nya.apigw.ntruss.com/custom/v1/42327/f3c7e3113ac357186e47550d706f42366acc27bae8adf2ddfb974888308c5dd5/infer"  # 실제 URL로 교체
-OCR_SECRET_KEY = "SEFFbmdpb0hiclpzeURVelBkT1Z2ekRvc1RRcXZVZ0g="  # 실제 시크릿 키로 교체
-API_GATEWAY_KEY = "L3q6cghiyc93PvgqDF23jQB6acz8HjbYoZF7R0KN"     # 실제 API Gateway 키로 교체
+########################################### 앱 연결 매핑 api #############################################
 
-# 🔎 클로바 OCR 호출 함수
+load_dotenv()
+OCR_ENDPOINT_URL = api_key = os.getenv("OCR_ENDPOINT_URL")
+OCR_SECRET_KEY = api_key = os.getenv("OCR_SECRET_KEY")
+API_GATEWAY_KEY = api_key = os.getenv("API_GATEWAY_KEY")
+
+# 클로바 OCR 호출 함수
 def call_clova_ocr(image_base64):
     with open("last_upload.jpg", "wb") as f:
         f.write(base64.b64decode(image_base64))
@@ -873,7 +584,6 @@ def call_clova_ocr(image_base64):
     print(json.dumps(result, indent=2, ensure_ascii=False))  # 콘솔 출력
     return result
 
-# 🔗 Flask 엔드포인트
 @app.route('/ocr', methods=['POST'])
 def ocr():
     data = request.json
@@ -899,7 +609,266 @@ def ocr():
     
     return jsonify(filtered)
 
+############################ 인증 관련 API #########################
 
+# 이메일 유효성 검사 함수
+def is_valid_email(email):
+    """이메일 형식 유효성 검사"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+# 전화번호 유효성 검사 함수
+def is_valid_phone(phone):
+    """한국 전화번호 형식 유효성 검사"""
+    pattern = r'^01[0-9]-?[0-9]{4}-?[0-9]{4}$'
+    return re.match(pattern, phone) is not None
+
+# 생년월일 유효성 검사 함수
+def is_valid_birth(birth):
+    """생년월일 형식 유효성 검사 (YYYY-MM-DD)"""
+    pattern = r'^\d{4}-\d{2}-\d{2}$'
+    if not re.match(pattern, birth):
+        return False
+    
+    try:
+        datetime.strptime(birth, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+# 주민번호 유효성 검사 함수
+def is_valid_ssn(ssn):
+    """주민번호 형식 유효성 검사 (XXXXXX-XXXXXXX)"""
+    pattern = r'^\d{6}-\d{7}$'
+    if not re.match(pattern, ssn):
+        return False
+    
+    # 주민번호 체크섬 검증 (간단한 버전)
+    try:
+        # 앞 6자리 (생년월일)
+        birth_part = ssn[:6]
+        # 뒤 7자리 (성별코드 + 지역코드 + 일련번호 + 체크섬)
+        id_part = ssn[7:]
+        
+        # 생년월일 유효성 검사
+        year = int(birth_part[:2])
+        month = int(birth_part[2:4])
+        day = int(birth_part[4:6])
+        
+        # 1900년대 또는 2000년대 판단
+        if year >= 0 and year <= 99:
+            if int(id_part[0]) <= 2:  # 1, 2로 시작하면 1900년대
+                year += 1900
+            else:  # 3, 4로 시작하면 2000년대
+                year += 2000
+        
+        # 날짜 유효성 검사
+        from datetime import datetime
+        datetime(year, month, day)
+        
+        return True
+    except (ValueError, IndexError):
+        return False
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """회원가입 API"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증 (ssn 추가)
+        required_fields = ['username', 'email', 'password', 'phone', 'birth', 'ssn', 'driver_license']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'{field}는 필수 입력 항목입니다.'}), 400
+        
+        # 이메일 형식 검증
+        if not is_valid_email(data['email']):
+            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
+        
+        # 전화번호 형식 검증
+        if not is_valid_phone(data['phone']):
+            return jsonify({'error': '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'}), 400
+        
+        # 생년월일 형식 검증
+        if not is_valid_birth(data['birth']):
+            return jsonify({'error': '올바른 생년월일 형식이 아닙니다. (예: 1990-01-01)'}), 400
+        
+        # 주민번호 형식 검증 (새로 추가)
+        if not is_valid_ssn(data['ssn']):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
+        # 비밀번호 길이 검증
+        if len(data['password']) < 6:
+            return jsonify({'error': '비밀번호는 최소 6자 이상이어야 합니다.'}), 400
+        
+        # 이메일 중복 검사
+        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_exists = db.session.execute(email_check_sql, {'email': data['email']}).scalar()
+        
+        if email_exists > 0:
+            return jsonify({'error': '이미 사용 중인 이메일입니다.'}), 409
+        
+        # 주민번호 중복 검사 (새로 추가)
+        ssn_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE personal_number = :ssn")
+        ssn_exists = db.session.execute(ssn_check_sql, {'ssn': data['ssn']}).scalar()
+        
+        if ssn_exists > 0:
+            return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
+        
+        # 사용자 ID 생성
+        user_id = f"user_{uuid.uuid4().hex[:8]}"
+        
+        # 기존 데이터와 호환성을 위해 평문으로 저장
+        plain_password = data['password']
+        
+        # 나이 계산
+        birth_date = datetime.strptime(data['birth'], '%Y-%m-%d')
+        today = datetime.now()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        
+        # 사용자 정보 삽입 (personal_number 컬럼 추가)
+        insert_sql = text("""
+            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
+            VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :ssn, :driver_license, :sign_up_date, 0)
+        """)
+        
+        db.session.execute(insert_sql, {
+            'user_id': user_id,
+            'name': data['username'],
+            'email': data['email'],
+            'password': plain_password,
+            'phone': data['phone'],
+            'birth': data['birth'],
+            'age': age,
+            'sex': data.get('sex', 'M'),  # 기본값: 남성
+            'ssn': data['ssn'],  # 주민번호 추가
+            'driver_license': data['driver_license'],
+            'sign_up_date': datetime.now()
+        })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': '회원가입이 완료되었습니다.',
+            'user_id': user_id,
+            'username': data['username']
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"회원가입 오류: {str(e)}")
+        return jsonify({'error': '회원가입 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """로그인 API"""
+    try:
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        if not data.get('email') or not data.get('password'):
+            return jsonify({'error': '이메일과 비밀번호를 입력해주세요.'}), 400
+        
+        # 사용자 정보 조회 (실제 테이블 구조에 맞게 수정)
+        # 기존 데이터는 평문 비밀번호로 저장되어 있으므로 평문으로 비교
+        login_sql = text("""
+            SELECT USER_ID, name, email, phone, birth, age, sex, driver_license_number, sign_up_date, is_delete, user_pw
+            FROM USER_INFO 
+            WHERE email = :email
+        """)
+        
+        user = db.session.execute(login_sql, {
+            'email': data['email']
+        }).mappings().first()
+        
+        # 비밀번호 확인 (평문 비교)
+        if not user or user['user_pw'] != data['password']:
+            user = None
+        
+        if not user:
+            return jsonify({'error': '이메일 또는 비밀번호가 올바르지 않습니다.'}), 401
+        
+        # 탈퇴한 사용자 확인
+        if user['is_delete'] == 1:
+            return jsonify({'error': '탈퇴한 계정입니다.'}), 401
+        
+        # 로그인 성공 시 사용자 정보 반환
+        return jsonify({
+            'message': '로그인 성공',
+            'user': {
+                'user_id': user['USER_ID'],
+                'username': user['name'],
+                'email': user['email'],
+                'phone': user['phone'],
+                'birth': user['birth'].isoformat() if user['birth'] else None,
+                'age': user['age'],
+                'sex': user['sex'],
+                'driver_license': user['driver_license_number'],
+                'sign_up_date': user['sign_up_date'].isoformat() if user['sign_up_date'] else None
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"로그인 오류: {str(e)}")
+        return jsonify({'error': '로그인 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/check-email', methods=['POST'])
+def check_email():
+    """이메일 중복 확인 API"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': '이메일을 입력해주세요.'}), 400
+        
+        if not is_valid_email(email):
+            return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
+        
+        # 이메일 중복 검사
+        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_exists = db.session.execute(email_check_sql, {'email': email}).scalar()
+        
+        if email_exists > 0:
+            return jsonify({'available': False, 'message': '이미 사용 중인 이메일입니다.'}), 409
+        else:
+            return jsonify({'available': True, 'message': '사용 가능한 이메일입니다.'}), 200
+            
+    except Exception as e:
+        print(f"이메일 확인 오류: {str(e)}")
+        return jsonify({'error': '이메일 확인 중 오류가 발생했습니다.'}), 500
+
+@app.route('/api/auth/verify-license', methods=['POST'])
+def verify_license():
+    """운전면허증 번호 유효성 검사 API"""
+    try:
+        data = request.get_json()
+        license_number = data.get('driver_license')
+        
+        if not license_number:
+            return jsonify({'error': '운전면허증 번호를 입력해주세요.'}), 400
+        
+        # 운전면허증 번호 형식 검증 (한국 형식: 12-34-567890-12)
+        pattern = r'^\d{2}-\d{2}-\d{6}-\d{2}$'
+        if not re.match(pattern, license_number):
+            return jsonify({'error': '올바른 운전면허증 번호 형식이 아닙니다. (예: 12-34-567890-12)'}), 400
+        
+        # 중복 확인
+        license_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE driver_license_number = :license")
+        license_exists = db.session.execute(license_check_sql, {'license': license_number}).scalar()
+        
+        if license_exists > 0:
+            return jsonify({'available': False, 'message': '이미 등록된 운전면허증 번호입니다.'}), 409
+        else:
+            return jsonify({'available': True, 'message': '사용 가능한 운전면허증 번호입니다.'}), 200
+            
+    except Exception as e:
+        print(f"운전면허증 확인 오류: {str(e)}")
+        return jsonify({'error': '운전면허증 확인 중 오류가 발생했습니다.'}), 500
+
+
+######################### OCR 인증 api ####################################
 @app.route('/api/auth/verify-user-license', methods=['POST'])
 def verify_user_license():
     """운전면허증 정보로 사용자 인증 API (주민번호 포함)"""
@@ -952,7 +921,7 @@ def verify_user_license():
         print(f"운전면허증 인증 오류: {str(e)}")
         return jsonify({'error': '인증 중 오류가 발생했습니다.'}), 500
 
-# 마이페이지 api
+######################### 마이페이지 api ####################################
 @app.route('/api/user-info/<user_id>', methods=['GET'])
 def get_user_info(user_id):
     """특정 사용자의 상세 정보 조회 API (신고 횟수 포함)"""
@@ -1076,7 +1045,7 @@ def update_user_info(user_id):
         print(f"사용자 정보 업데이트 오류: {str(e)}")
         return jsonify({'error': '사용자 정보 업데이트 중 오류가 발생했습니다.'}), 500
 
-
+################################# 대여 기능 api ####################################
 @app.route('/api/devices/available', methods=['GET'])
 def get_available_devices():
     """사용 가능한 기기 목록 조회 API (is_used = 0인 기기들만)"""
@@ -1206,7 +1175,6 @@ def start_device_rental():
 
 @app.route('/api/device-rental/realtime-log', methods=['POST'])
 def send_realtime_log():
-    """실시간 위치 로그 전송 API (10초마다 호출)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -1221,7 +1189,6 @@ def send_realtime_log():
         if not all([user_id, device_code, latitude, longitude]):
             return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
         
-        # device_realtime_log 테이블에 실시간 로그 저장 (시간과 초까지 포함)
         realtime_log_sql = text("""
             INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
             VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
@@ -1374,8 +1341,6 @@ def end_device_rental():
         return jsonify({'error': '기기 대여 종료 중 오류가 발생했습니다.'}), 500
 
 
-
-
 @app.route('/api/device-rental/status/<device_code>', methods=['GET'])
 def get_device_rental_status(device_code):
     """기기 대여 상태 확인 API"""
@@ -1414,6 +1379,7 @@ def get_device_rental_status(device_code):
         return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
 
 
+################################# 신고 기능 api ####################################
 @app.route('/api/report/manual-submit', methods=['POST'])
 def manual_submit_report():
     """수동 신고 처리 API (헬멧 미착용 감지 시)"""
@@ -1542,7 +1508,280 @@ def find_closest_user(reporter_lat, reporter_lng, report_time, reporter_user_id)
         print(f"가장 가까운 사용자 찾기 오류: {str(e)}")
         return None, None
 
+
+
+########################################################### 챗봇을 위한 엔드포인트
+vector_store = None
+documents = None
+session_memories = {}
+
+# 앱 시작 시 한 번만 로드
+def initialize_documents():
+    global documents
+    try:
+        print("=== 문서 초기화 시작 ===")
+        url = r"rAider.pdf"
+        print(f"문서 경로: {url}")
+        
+        # 파일 존재 확인
+        import os
+        if not os.path.exists(url):
+            print(f" 파일이 존재하지 않습니다: {url}")
+            return False
+            
+        print(f"파일 존재 확인: {url}")
+        
+        loader = PyPDFLoader(url)
+        documents = loader.load()
+        print(f"문서 로드 완료: {len(documents)}개 페이지")
+        
+        return True
+    except Exception as e:
+        print(f"문서 초기화 실패: {str(e)}")
+        return False
+
+# 벡터DB 초기화 함수 추가
+def initialize_vector_store():
+    global vector_store, documents
+    
+    if vector_store is not None:
+        print("벡터DB가 이미 초기화됨")
+        return True
+    
+    if documents is None:
+        print("문서가 없어서 벡터DB를 초기화할 수 없음")
+        return False
+    
+    try:
+        load_dotenv()
+        api_key = os.getenv("open_api_key")
+        
+        if not api_key:
+            print("OpenAI API 키가 설정되지 않음")
+            return False
+        
+        print("=== 벡터DB 초기화 시작 ===")
+        
+        # 벡터DB가 이미 존재하는지 확인
+        persist_directory = r"VectorDB"
+        embedding_function = OpenAIEmbeddings(api_key=api_key)
+        
+        if os.path.exists(persist_directory) and os.listdir(persist_directory):
+            print("기존 벡터DB 로드 시도...")
+            try:
+                # 기존 벡터DB 로드
+                vector_store = Chroma(
+                    persist_directory=persist_directory,
+                    embedding_function=embedding_function
+                )
+                print(f"기존 벡터DB 로드됨. 문서 수: {vector_store._collection.count()}")
+                return True
+            except Exception as e:
+                print(f"기존 벡터DB 로드 실패: {e}")
+                vector_store = None
+        
+        # 새로 생성
+        print("새 벡터DB 생성 시도...")
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=200
+        )
+        chunks = text_splitter.split_documents(documents)
+        print(f"✅ 청크 생성 완료: {len(chunks)}개")
+        
+        vector_store = Chroma.from_documents(
+            documents=chunks,
+            embedding=embedding_function,
+            persist_directory=persist_directory,
+        )
+        print(f"✅ 새 벡터DB 생성됨. 문서 수: {vector_store._collection.count()}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 벡터DB 초기화 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+# 세션별 메모리 관리 함수 추가
+def get_or_create_memory(session_id):
+    """세션별 메모리 생성 또는 가져오기"""
+    if session_id not in session_memories:
+        session_memories[session_id] = ChatMessageHistory()
+    return session_memories[session_id]
+
+@app.route('/api/RAG_Chatbot', methods=['POST'])
+def rag_chatbot():
+    try:
+        # 요청 데이터 받기
+        data = request.get_json()
+        question = data.get('question')
+        session_id = data.get('session_id', 'default_session')
+        
+        if not question:
+            return jsonify({'error': '질문을 입력해주세요.'}), 400
+        
+        # 전역 변수 초기화
+        global vector_store, documents
+        if documents is None:
+            print("문서가 초기화되지 않음. 초기화 시도...")
+            success = initialize_documents()
+            if not success:
+                return jsonify({'error': '문서 초기화에 실패했습니다.'}), 500
+        
+        if vector_store is None:
+            print("벡터DB가 초기화되지 않음. 초기화 시도...")
+            success = initialize_vector_store()
+            if not success:
+                return jsonify({'error': '벡터DB 초기화에 실패했습니다.'}), 500
+        
+        # 나머지 코드는 동일...
+        load_dotenv()
+        api_key = os.getenv("open_api_key")
+        
+        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        
+        # 프롬프트 템플릿 설정
+        template = """
+            당신은 rAider 킥보드 공유 서비스 전문가입니다. 다음 정보를 바탕으로 사용자의 질문에 답변해주세요.
+
+            컨텍스트: {context}
+            사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요. 
+            답변은 친절하고 구체적으로 작성해주세요.
+            답변을 생성할 때는 예시에 맞게 앱과 관련된 질문만 답변하도록 해주세요.
+
+            - 예시1
+            사용자 : 5+5는 뭐야?
+            챗봇 : 해당 질문은 rAider 앱과 관련이 없는 질문 입니다. 정확한 질문을 입력해주세요.
+
+            - 예시2
+            사용자 : 김치찌개 레시피 알려줘
+            챗봇 : 해당 질문은 rAider 앱과 관련이 없는 질문 입니다. 정확한 질문을 입력해주세요.
+
+            - 예시3
+            사용자 : rAider 앱은 누가 만든거야?
+            챗봇 : rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 앱입니다.
+        """
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", template),
+            ("placeholder", "{chat_history}"),
+            ("human", "{question}")
+        ])
+
+        # BaseCache와 Callbacks 정의 및 ChatOpenAI 모델 정의
+        from langchain_core.caches import BaseCache
+        from langchain_core.callbacks import Callbacks
+        
+        # BaseCache와 Callbacks를 정의하고 ChatOpenAI 모델 재빌드
+        try:
+            ChatOpenAI.model_rebuild()
+        except:
+            pass
+        
+        # ChatOpenAI 모델 정의
+        model = ChatOpenAI(
+            model_name="gpt-4o-mini", 
+            temperature=0, 
+            openai_api_key=api_key
+        )
+
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+
+        chain = (
+            RunnablePassthrough.assign(
+                context=lambda x: format_docs(retriever.invoke(x["question"]))
+            )
+            | prompt
+            | model
+            | StrOutputParser()
+        )
+
+        # 세션별 메모리 설정 및 챗봇 실행
+        chat_history = get_or_create_memory(session_id)
+        chain_with_memory = RunnableWithMessageHistory(
+            chain,
+            lambda session_id: chat_history,
+            input_messages_key="question",
+            history_messages_key="chat_history",
+        )
+        
+        # 실제 챗봇 실행
+        response = chain_with_memory.invoke(
+            {"question": question},
+            config={"configurable": {"session_id": session_id}}
+        )
+        
+        return jsonify({
+            'success': True,
+            'response': response,
+            'session_id': session_id
+        }), 200
+        
+    except Exception as e:
+        print(f"RAG 챗봇 오류: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': '챗봇 처리 중 오류가 발생했습니다.'}), 500
+        
+# 챗봇 상태 확인 API 수정
+@app.route('/api/RAG_Chatbot/status', methods=['GET'])
+def get_chatbot_status():
+    """챗봇 상태 확인 API"""
+    try:
+        global vector_store, documents
+        
+        print(f"=== 챗봇 상태 확인 ===")
+        print(f"벡터DB 상태: {vector_store is not None}")
+        print(f"문서 상태: {documents is not None}")
+        
+        # 문서가 없으면 초기화 시도
+        if documents is None:
+            print("문서 초기화 시도...")
+            success = initialize_documents()
+            if not success:
+                return jsonify({
+                    'status': 'document_error',
+                    'message': '문서 초기화에 실패했습니다.',
+                    'debug_info': {
+                        'vector_store_exists': vector_store is not None,
+                        'documents_exist': documents is not None
+                    }
+                }), 200
+        
+        # 벡터DB가 없으면 초기화 시도
+        if vector_store is None:
+            print("벡터DB 초기화 시도...")
+            success = initialize_vector_store()
+            if not success:
+                return jsonify({
+                    'status': 'vector_db_error',
+                    'message': '벡터DB 초기화에 실패했습니다.',
+                    'debug_info': {
+                        'vector_store_exists': vector_store is not None,
+                        'documents_exist': documents is not None
+                    }
+                }), 200
+        
+        doc_count = vector_store._collection.count()
+        session_count = len(session_memories)
+        
+        return jsonify({
+            'status': 'ready',
+            'document_count': doc_count,
+            'active_sessions': session_count,
+            'message': '챗봇이 정상적으로 작동 중입니다.'
+        }), 200
+        
+    except Exception as e:
+        print(f"상태 확인 오류: {str(e)}")
+        return jsonify({
+            'error': '상태 확인 중 오류가 발생했습니다.'
+        }), 500
+
 #####################################################################################
 
 if __name__ == '__main__':
+    initialize_documents()
     app.run(debug=True, host='0.0.0.0', port=5000)
