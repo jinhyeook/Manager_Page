@@ -1,5 +1,4 @@
 *.jpg
 /venv
-*.pdf
 .env
 /VectorDB
