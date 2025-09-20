@@ -36,27 +36,34 @@ app.secret_key = 'your-secret-key-here'
 db = SQLAlchemy(app)
 CORS(app)
 
-############################ 관리자 웹페이지 매핑 api들 #########################
+############################ 관리자 웹페이지 매핑 API들 #########################
+
+# 메인 대시보드 페이지
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# 디바이스 관리 페이지
 @app.route('/devices')
 def devices():
     return render_template('devices.html')
 
+# 신고 관리 페이지
 @app.route('/reports')
 def reports():
     return render_template('reports.html')
 
+# 사용자 관리 페이지
 @app.route('/users')
-def users():ㅇ
+def users():
     return render_template('users.html')
 
+# 통계 페이지
 @app.route('/statistics')
 def statistics():
     return render_template('statistics.html')
 
+# 웹 관리자용 디바이스 목록 조회 API
 @app.route('/api/web/devices')
 def get_web_devices():
     sql = text(
@@ -91,7 +98,7 @@ def get_web_devices():
         })
     return jsonify(result)
 
-# 웹 관리자 페이지 전용 개별 디바이스 API (좌표 순서 수정)
+# 웹 관리자용 개별 디바이스 상세 조회 API
 @app.route('/api/web/devices/<device_id>')
 def get_web_device(device_id):
     sql = text(
@@ -126,6 +133,7 @@ def get_web_device(device_id):
         'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
     })
 
+# 앱용 개별 디바이스 조회 API
 @app.route('/api/devices/<device_id>')
 def get_device(device_id):
     sql = text(
@@ -160,6 +168,7 @@ def get_device(device_id):
         'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
     })
 
+# 신고 목록 조회 API
 @app.route('/api/reports')
 def get_reports():
     sql = text(
@@ -220,6 +229,7 @@ def get_reports():
         })
     return jsonify(result)
 
+# 사용자 목록 조회 API
 @app.route('/api/users')
 def get_users():
     sql = text(
@@ -258,6 +268,7 @@ def get_users():
         })
     return jsonify(result)
 
+# 사용자 정보 수정 API
 @app.route('/api/users/<user_id>', methods=['PUT'])
 def update_user(user_id):
     data = request.get_json()
@@ -297,6 +308,7 @@ def update_user(user_id):
         db.session.rollback()
         return jsonify({'error': f'수정 중 오류가 발생했습니다: {str(e)}'}), 500
 
+# 사용자 삭제 API
 @app.route('/api/users/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     try:
@@ -312,12 +324,12 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({'error': f'삭제 중 오류가 발생했습니다: {str(e)}'}), 500
 
+# 사용자 생성 API
 @app.route('/api/users', methods=['POST'])
 def create_user():
     data = request.get_json()
     try:
         # USER_ID 자동 생성
-        import uuid
         user_id = f"user{uuid.uuid4().hex[:8]}"
         
         # 상태에 따른 is_delete 값 설정
@@ -344,7 +356,7 @@ def create_user():
         db.session.rollback()
         return jsonify({'error': f'생성 중 오류가 발생했습니다: {str(e)}'}), 500
 
-# 신고 상태 업데이트 API
+# 신고 상태 업데이트 API (해결/미해결 처리)
 @app.route('/api/reports/<report_id>/status', methods=['PUT'])
 def update_report_status(report_id):
     data = request.get_json()
@@ -377,6 +389,7 @@ def update_report_status(report_id):
         db.session.rollback()
         return jsonify({'error': f'상태 업데이트 중 오류가 발생했습니다: {str(e)}'}), 500
 
+# 통계 데이터 조회 API (디바이스, 사용자, 신고 통계)
 @app.route('/api/statistics')
 def get_statistics():
     # 디바이스 상태 통계
@@ -548,14 +561,14 @@ def get_statistics():
         'pending_reports': int(pending_reports or 0)
     })
 
-########################################### 앱 연결 매핑 api #############################################
+########################################### 앱 연결 매핑 API #############################################
 
 load_dotenv()
 OCR_ENDPOINT_URL = api_key = os.getenv("OCR_ENDPOINT_URL")
 OCR_SECRET_KEY = api_key = os.getenv("OCR_SECRET_KEY")
 API_GATEWAY_KEY = api_key = os.getenv("API_GATEWAY_KEY")
 
-# 클로바 OCR 호출 함수
+# 클로바 OCR API 호출 함수 (운전면허증 정보 추출)
 def call_clova_ocr(image_base64):
     with open("last_upload.jpg", "wb") as f:
         f.write(base64.b64decode(image_base64))
@@ -584,6 +597,7 @@ def call_clova_ocr(image_base64):
     print(json.dumps(result, indent=2, ensure_ascii=False))  # 콘솔 출력
     return result
 
+# OCR 처리 API (운전면허증 이미지에서 정보 추출)
 @app.route('/ocr', methods=['POST'])
 def ocr():
     data = request.json
@@ -608,6 +622,64 @@ def ocr():
     }
     
     return jsonify(filtered)
+
+######################### OCR 인증 API ####################################
+
+# 운전면허증 정보로 사용자 인증 API
+@app.route('/api/auth/verify-user-license', methods=['POST'])
+def verify_user_license():
+    """운전면허증 정보로 사용자 인증 API (주민번호 + 로그인 사용자 ID 포함)"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        driver_license = data.get('driver_license')
+        ssn = data.get('ssn')  # 주민번호
+        user_id = data.get('user_id')  # 로그인된 사용자 ID 추가
+        
+        print(f"인증 요청: name={name}, driver_license={driver_license}, ssn={ssn}, user_id={user_id}")
+        
+        if not name or not driver_license or not ssn or not user_id:
+            return jsonify({'error': '이름, 운전면허증 번호, 주민번호, 사용자 ID를 모두 입력해주세요.'}), 400
+        
+        # 주민번호 형식 검증
+        if not is_valid_ssn(ssn):
+            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
+        
+        # DB에서 사용자 정보 확인 (4개 정보가 모두 일치하는지)
+        verify_sql = text("""
+            SELECT USER_ID, name, driver_license_number, personal_number
+            FROM USER_INFO 
+            WHERE USER_ID = :user_id
+            AND name = :name 
+            AND driver_license_number = :driver_license 
+            AND personal_number = :ssn 
+            AND is_delete = 0
+        """)
+        
+        user = db.session.execute(verify_sql, {
+            'user_id': user_id,
+            'name': name,
+            'driver_license': driver_license,
+            'ssn': ssn
+        }).mappings().first()
+        
+        print(f"DB 조회 결과: {user}")
+        
+        if user:
+            return jsonify({
+                'verified': True,
+                'message': '인증이 완료되었습니다.',
+                'user_id': user['USER_ID']
+            }), 200
+        else:
+            return jsonify({
+                'verified': False,
+                'message': '인증 실패(사용자의 면허증을 사용해주세요)'
+            }), 401
+            
+    except Exception as e:
+        print(f"운전면허증 인증 오류: {str(e)}")
+        return jsonify({'error': '인증 중 오류가 발생했습니다.'}), 500
 
 ############################ 인증 관련 API #########################
 
@@ -670,6 +742,7 @@ def is_valid_ssn(ssn):
     except (ValueError, IndexError):
         return False
 
+# 회원가입 API
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     """회원가입 API"""
@@ -760,6 +833,7 @@ def register():
         print(f"회원가입 오류: {str(e)}")
         return jsonify({'error': '회원가입 중 오류가 발생했습니다.'}), 500
 
+# 로그인 API
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     """로그인 API"""
@@ -813,6 +887,7 @@ def login():
         print(f"로그인 오류: {str(e)}")
         return jsonify({'error': '로그인 중 오류가 발생했습니다.'}), 500
 
+# 이메일 중복 확인 API
 @app.route('/api/auth/check-email', methods=['POST'])
 def check_email():
     """이메일 중복 확인 API"""
@@ -839,6 +914,7 @@ def check_email():
         print(f"이메일 확인 오류: {str(e)}")
         return jsonify({'error': '이메일 확인 중 오류가 발생했습니다.'}), 500
 
+# 운전면허증 번호 유효성 검사 API
 @app.route('/api/auth/verify-license', methods=['POST'])
 def verify_license():
     """운전면허증 번호 유효성 검사 API"""
@@ -868,60 +944,9 @@ def verify_license():
         return jsonify({'error': '운전면허증 확인 중 오류가 발생했습니다.'}), 500
 
 
-######################### OCR 인증 api ####################################
-@app.route('/api/auth/verify-user-license', methods=['POST'])
-def verify_user_license():
-    """운전면허증 정보로 사용자 인증 API (주민번호 포함)"""
-    try:
-        data = request.get_json()
-        name = data.get('name')
-        driver_license = data.get('driver_license')
-        ssn = data.get('ssn')  # 주민번호 추가
-        
-        print(f"인증 요청: name={name}, driver_license={driver_license}, ssn={ssn}")
-        
-        if not name or not driver_license or not ssn:
-            return jsonify({'error': '이름, 운전면허증 번호, 주민번호를 모두 입력해주세요.'}), 400
-        
-        # 주민번호 형식 검증
-        if not is_valid_ssn(ssn):
-            return jsonify({'error': '올바른 주민번호 형식이 아닙니다. (예: 901201-1234567)'}), 400
-        
-        # DB에서 사용자 정보 확인 (이름, 운전면허증 번호, 주민번호가 모두 일치하는지)
-        verify_sql = text("""
-            SELECT USER_ID, name, driver_license_number, personal_number
-            FROM USER_INFO 
-            WHERE name = :name 
-            AND driver_license_number = :driver_license 
-            AND personal_number = :ssn 
-            AND is_delete = 0
-        """)
-        
-        user = db.session.execute(verify_sql, {
-            'name': name,
-            'driver_license': driver_license,
-            'ssn': ssn
-        }).mappings().first()
-        
-        print(f"DB 조회 결과: {user}")
-        
-        if user:
-            return jsonify({
-                'verified': True,
-                'message': '인증이 완료되었습니다.',
-                'user_id': user['USER_ID']
-            }), 200
-        else:
-            return jsonify({
-                'verified': False,
-                'message': '인증에 실패했습니다. 정보를 다시 확인해주세요.'
-            }), 401
-            
-    except Exception as e:
-        print(f"운전면허증 인증 오류: {str(e)}")
-        return jsonify({'error': '인증 중 오류가 발생했습니다.'}), 500
+######################### 마이페이지 API ####################################
 
-######################### 마이페이지 api ####################################
+# 사용자 상세 정보 조회 API (신고 횟수 포함)
 @app.route('/api/user-info/<user_id>', methods=['GET'])
 def get_user_info(user_id):
     """특정 사용자의 상세 정보 조회 API (신고 횟수 포함)"""
@@ -965,11 +990,8 @@ def get_user_info(user_id):
     except Exception as e:
         print(f"사용자 정보 조회 오류: {str(e)}")
         return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
-        
-    except Exception as e:
-        print(f"사용자 정보 조회 오류: {str(e)}")
-        return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
 
+# 사용자 정보 업데이트 API
 @app.route('/api/user-info/<user_id>', methods=['PUT'])
 def update_user_info(user_id):
     """사용자 정보 업데이트 API"""
@@ -1045,7 +1067,9 @@ def update_user_info(user_id):
         print(f"사용자 정보 업데이트 오류: {str(e)}")
         return jsonify({'error': '사용자 정보 업데이트 중 오류가 발생했습니다.'}), 500
 
-################################# 대여 기능 api ####################################
+################################# 대여 기능 API ####################################
+
+# 사용 가능한 기기 목록 조회 API
 @app.route('/api/devices/available', methods=['GET'])
 def get_available_devices():
     """사용 가능한 기기 목록 조회 API (is_used = 0인 기기들만)"""
@@ -1084,6 +1108,7 @@ def get_available_devices():
         return jsonify({'error': '기기 정보 조회 중 오류가 발생했습니다.'}), 500
 
 
+# 기기 사용 상태 업데이트 API
 @app.route('/api/devices/<device_id>/status', methods=['PUT'])
 def update_device_status(device_id):
     """기기 사용 상태 업데이트 API"""
@@ -1119,6 +1144,7 @@ def update_device_status(device_id):
         print(f"기기 상태 업데이트 오류: {str(e)}")
         return jsonify({'error': '기기 상태 업데이트 중 오류가 발생했습니다.'}), 500
 
+# 기기 대여 시작 API
 @app.route('/api/device-rental/start', methods=['POST'])
 def start_device_rental():
     """기기 대여 시작 API"""
@@ -1173,6 +1199,7 @@ def start_device_rental():
         print(f"기기 대여 시작 오류: {str(e)}")
         return jsonify({'error': '기기 대여 시작 중 오류가 발생했습니다.'}), 500
 
+# 실시간 위치 로그 전송 API
 @app.route('/api/device-rental/realtime-log', methods=['POST'])
 def send_realtime_log():
     try:
@@ -1212,6 +1239,7 @@ def send_realtime_log():
         print(f"실시간 로그 전송 오류: {str(e)}")
         return jsonify({'error': '실시간 로그 전송 중 오류가 발생했습니다.'}), 500
 
+# 기기 대여 종료 API (요금 계산 및 거리 측정)
 @app.route('/api/device-rental/end', methods=['POST'])
 def end_device_rental():
     """기기 대여 종료 API"""
@@ -1341,6 +1369,7 @@ def end_device_rental():
         return jsonify({'error': '기기 대여 종료 중 오류가 발생했습니다.'}), 500
 
 
+# 기기 대여 상태 확인 API
 @app.route('/api/device-rental/status/<device_code>', methods=['GET'])
 def get_device_rental_status(device_code):
     """기기 대여 상태 확인 API"""
@@ -1379,7 +1408,9 @@ def get_device_rental_status(device_code):
         return jsonify({'error': '기기 대여 상태 확인 중 오류가 발생했습니다.'}), 500
 
 
-################################# 신고 기능 api ####################################
+################################# 신고 기능 API ####################################
+
+# 수동 신고 처리 API (헬멧 미착용 감지 시)
 @app.route('/api/report/manual-submit', methods=['POST'])
 def manual_submit_report():
     """수동 신고 처리 API (헬멧 미착용 감지 시)"""
@@ -1463,6 +1494,7 @@ def manual_submit_report():
         print(f"수동 신고 처리 오류: {str(e)}")
         return jsonify({'error': '수동 신고 처리 중 오류가 발생했습니다.'}), 500
 
+# 가장 가까운 사용자 찾기 함수 (신고자 제외)
 def find_closest_user(reporter_lat, reporter_lng, report_time, reporter_user_id):
     """device_realtime_log에서 가장 가까운 사용자 찾기 (신고자 제외)"""
     try:
@@ -1515,7 +1547,7 @@ vector_store = None
 documents = None
 session_memories = {}
 
-# 앱 시작 시 한 번만 로드
+# 문서 초기화 함수 (PDF 로드)
 def initialize_documents():
     global documents
     try:
@@ -1540,7 +1572,7 @@ def initialize_documents():
         print(f"문서 초기화 실패: {str(e)}")
         return False
 
-# 벡터DB 초기화 함수 추가
+# 벡터DB 초기화 함수 (Chroma 벡터 스토어 생성)
 def initialize_vector_store():
     global vector_store, documents
     
@@ -1603,13 +1635,14 @@ def initialize_vector_store():
         traceback.print_exc()
         return False
 
-# 세션별 메모리 관리 함수 추가
+# 세션별 메모리 관리 함수 (챗봇 대화 기록)
 def get_or_create_memory(session_id):
     """세션별 메모리 생성 또는 가져오기"""
     if session_id not in session_memories:
         session_memories[session_id] = ChatMessageHistory()
     return session_memories[session_id]
 
+# RAG 챗봇 API (rAider 서비스 관련 질문 답변)
 @app.route('/api/RAG_Chatbot', methods=['POST'])
 def rag_chatbot():
     try:
@@ -1725,7 +1758,7 @@ def rag_chatbot():
         traceback.print_exc()
         return jsonify({'error': '챗봇 처리 중 오류가 발생했습니다.'}), 500
         
-# 챗봇 상태 확인 API 수정
+# 챗봇 상태 확인 API (벡터DB 및 문서 상태 체크)
 @app.route('/api/RAG_Chatbot/status', methods=['GET'])
 def get_chatbot_status():
     """챗봇 상태 확인 API"""
