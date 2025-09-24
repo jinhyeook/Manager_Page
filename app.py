@@ -31,10 +31,8 @@ db_password = os.getenv('DB_PASSWORD')
 db_host = os.getenv('DB_HOST')
 db_name = os.getenv('DB_NAME')
 
-
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_username}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'your-secret-key-here'
 
 db = SQLAlchemy(app)
 CORS(app)
@@ -78,7 +76,7 @@ def get_web_devices():
             battery_level,
             is_used,
             created_at
-        FROM DEVICE_INFO
+        FROM device_info
         """
     )
     rows = db.session.execute(sql).mappings().all()
@@ -113,7 +111,7 @@ def get_web_device(device_id):
             battery_level,
             is_used,
             created_at
-        FROM DEVICE_INFO
+        FROM device_info
         WHERE DEVICE_CODE = :device_code
         """
     )
@@ -148,7 +146,7 @@ def get_device(device_id):
             battery_level,
             is_used,
             created_at
-        FROM DEVICE_INFO
+        FROM device_info
         WHERE DEVICE_CODE = :device_code
         """
     )
@@ -186,7 +184,7 @@ def get_reports():
             is_verified,
             report_case,
             image
-        FROM REPORT_LOG
+        FROM report_log
         ORDER BY report_time DESC
         """
     )
@@ -245,10 +243,10 @@ def get_users():
             u.sign_up_date,
             u.is_delete,
             COALESCE(r.report_count, 0) as report_count
-        FROM USER_INFO u
+        FROM user_info u
         LEFT JOIN (
             SELECT REPORTED_USER_ID, COUNT(*) as report_count
-            FROM REPORT_LOG
+            FROM report_log
             GROUP BY REPORTED_USER_ID
         ) r ON u.USER_ID = r.REPORTED_USER_ID
         ORDER BY u.sign_up_date DESC
@@ -283,7 +281,7 @@ def update_user(user_id):
         
         sql = text(
             """
-            UPDATE USER_INFO 
+            UPDATE user_info
             SET name = :name, email = :email, phone = :phone, is_delete = :is_delete
             WHERE USER_ID = :user_id
             """
@@ -315,7 +313,7 @@ def update_user(user_id):
 @app.route('/api/users/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     try:
-        sql = text("DELETE FROM USER_INFO WHERE USER_ID = :user_id")
+        sql = text("DELETE FROM user_info WHERE USER_ID = :user_id")
         result = db.session.execute(sql, {'user_id': user_id})
         db.session.commit()
         
@@ -340,7 +338,7 @@ def create_user():
         
         sql = text(
             """
-            INSERT INTO USER_INFO (USER_ID, name, email, phone, birth, sex, is_delete)
+            INSERT INTO user_info (USER_ID, name, email, phone, birth, sex, is_delete)
             VALUES (:user_id, :name, :email, :phone, :birth, :sex, :is_delete)
             """
         )
@@ -373,7 +371,7 @@ def update_report_status(report_id):
         
         sql = text(
             """
-            UPDATE REPORT_LOG 
+            UPDATE report_log 
             SET is_verified = :is_verified
             WHERE REPORTED_DEVICE_CODE = :device_code
             """
@@ -403,7 +401,7 @@ def get_statistics():
                 ELSE '사용 가능'
             END as status,
             COUNT(*) as count
-        FROM DEVICE_INFO 
+        FROM device_info 
         GROUP BY is_used
     """)
     device_status = db.session.execute(device_status_sql).mappings().all()
@@ -424,7 +422,7 @@ def get_statistics():
                 ELSE '90-100%'
             END as battery_range,
             COUNT(*) as count
-        FROM DEVICE_INFO 
+        FROM device_info 
         GROUP BY 
             CASE 
                 WHEN battery_level < 10 THEN '0-9%'
@@ -451,7 +449,7 @@ def get_statistics():
                 ELSE '기타'
             END as gender,
             COUNT(*) as count
-        FROM USER_INFO 
+        FROM user_info 
         WHERE is_delete = 0
         GROUP BY sex
     """)
@@ -470,7 +468,7 @@ def get_statistics():
                 ELSE '70대 이상'
             END as age_group,
             COUNT(*) as count
-        FROM USER_INFO 
+        FROM user_info 
         WHERE is_delete = 0 AND age IS NOT NULL
         GROUP BY 
             CASE 
@@ -505,7 +503,7 @@ def get_statistics():
                 ELSE '기타 지역'
             END as district,
             COUNT(*) as count
-        FROM DEVICE_INFO 
+        FROM device_info 
         WHERE location IS NOT NULL
         GROUP BY 
             CASE 
@@ -527,7 +525,7 @@ def get_statistics():
                 ELSE '신고 유형 탐지 실패'
             END as report_type,
             COUNT(*) as count
-        FROM REPORT_LOG
+        FROM report_log
         GROUP BY 
             CASE 
                 WHEN report_case = 0 THEN '헬멧 미착용 및 다인 탑승'
@@ -538,12 +536,12 @@ def get_statistics():
     """)
     report_type_stats = db.session.execute(report_type_sql).mappings().all()
     
-    total_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO")).scalar()
-    available_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE is_used = 0")).scalar()
-    low_battery_devices = db.session.execute(text("SELECT COUNT(*) FROM DEVICE_INFO WHERE battery_level <= 20")).scalar()
-    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG WHERE is_verified = 0")).scalar()
-    total_users = db.session.execute(text("SELECT COUNT(*) FROM USER_INFO WHERE is_delete = 0")).scalar()
-    total_reports = db.session.execute(text("SELECT COUNT(*) FROM REPORT_LOG")).scalar()
+    total_devices = db.session.execute(text("SELECT COUNT(*) FROM device_info")).scalar()
+    available_devices = db.session.execute(text("SELECT COUNT(*) FROM device_info WHERE is_used = 0")).scalar()
+    low_battery_devices = db.session.execute(text("SELECT COUNT(*) FROM device_info WHERE battery_level <= 20")).scalar()
+    pending_reports = db.session.execute(text("SELECT COUNT(*) FROM report_log WHERE is_verified = 0")).scalar()
+    total_users = db.session.execute(text("SELECT COUNT(*) FROM user_info WHERE is_delete = 0")).scalar()
+    total_reports = db.session.execute(text("SELECT COUNT(*) FROM report_log")).scalar()
     
     return jsonify({
         'device_status': [dict(row) for row in device_status],
@@ -567,9 +565,9 @@ def get_statistics():
 ########################################### 앱 연결 매핑 API #############################################
 
 load_dotenv()
-OCR_ENDPOINT_URL = api_key = os.getenv("OCR_ENDPOINT_URL")
-OCR_SECRET_KEY = api_key = os.getenv("OCR_SECRET_KEY")
-API_GATEWAY_KEY = api_key = os.getenv("API_GATEWAY_KEY")
+OCR_ENDPOINT_URL = os.getenv("OCR_ENDPOINT_URL")
+OCR_SECRET_KEY = os.getenv("OCR_SECRET_KEY")
+API_GATEWAY_KEY = os.getenv("API_GATEWAY_KEY")
 
 # 클로바 OCR API 호출 함수 (운전면허증 정보 추출)
 def call_clova_ocr(image_base64):
@@ -651,7 +649,7 @@ def verify_user_license():
         # DB에서 사용자 정보 확인 (4개 정보가 모두 일치하는지)
         verify_sql = text("""
             SELECT USER_ID, name, driver_license_number, personal_number
-            FROM USER_INFO 
+            FROM user_info 
             WHERE USER_ID = :user_id
             AND name = :name 
             AND driver_license_number = :driver_license 
@@ -779,14 +777,14 @@ def register():
             return jsonify({'error': '비밀번호는 최소 6자 이상이어야 합니다.'}), 400
         
         # 이메일 중복 검사
-        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_check_sql = text("SELECT COUNT(*) FROM user_info WHERE email = :email")
         email_exists = db.session.execute(email_check_sql, {'email': data['email']}).scalar()
         
         if email_exists > 0:
             return jsonify({'error': '이미 사용 중인 이메일입니다.'}), 409
         
         # 주민번호 중복 검사 (새로 추가)
-        ssn_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE personal_number = :ssn")
+        ssn_check_sql = text("SELECT COUNT(*) FROM user_info WHERE personal_number = :ssn")
         ssn_exists = db.session.execute(ssn_check_sql, {'ssn': data['ssn']}).scalar()
         
         if ssn_exists > 0:
@@ -805,7 +803,7 @@ def register():
         
         # 사용자 정보 삽입 (personal_number 컬럼 추가)
         insert_sql = text("""
-            INSERT INTO USER_INFO (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
+            INSERT INTO user_info (USER_ID, user_pw, name, email, phone, birth, age, sex, personal_number, driver_license_number, sign_up_date, is_delete)
             VALUES (:user_id, :password, :name, :email, :phone, :birth, :age, :sex, :ssn, :driver_license, :sign_up_date, 0)
         """)
         
@@ -851,7 +849,7 @@ def login():
         # 기존 데이터는 평문 비밀번호로 저장되어 있으므로 평문으로 비교
         login_sql = text("""
             SELECT USER_ID, name, email, phone, birth, age, sex, driver_license_number, sign_up_date, is_delete, user_pw
-            FROM USER_INFO 
+            FROM user_info 
             WHERE email = :email
         """)
         
@@ -905,7 +903,7 @@ def check_email():
             return jsonify({'error': '올바른 이메일 형식이 아닙니다.'}), 400
         
         # 이메일 중복 검사
-        email_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE email = :email")
+        email_check_sql = text("SELECT COUNT(*) FROM user_info WHERE email = :email")
         email_exists = db.session.execute(email_check_sql, {'email': email}).scalar()
         
         if email_exists > 0:
@@ -934,7 +932,7 @@ def verify_license():
             return jsonify({'error': '올바른 운전면허증 번호 형식이 아닙니다. (예: 12-34-567890-12)'}), 400
         
         # 중복 확인
-        license_check_sql = text("SELECT COUNT(*) FROM USER_INFO WHERE driver_license_number = :license")
+        license_check_sql = text("SELECT COUNT(*) FROM user_info WHERE driver_license_number = :license")
         license_exists = db.session.execute(license_check_sql, {'license': license_number}).scalar()
         
         if license_exists > 0:
@@ -964,10 +962,10 @@ def get_user_info(user_id):
                 u.birth,
                 u.age,
                 COALESCE(r.report_count, 0) as report_count
-            FROM USER_INFO u
+            FROM user_info u
             LEFT JOIN (
                 SELECT REPORTED_USER_ID, COUNT(*) as report_count
-                FROM REPORT_LOG
+                FROM report_log
                 WHERE REPORTED_USER_ID = :user_id
                 GROUP BY REPORTED_USER_ID
             ) r ON u.USER_ID = r.REPORTED_USER_ID
@@ -1044,7 +1042,7 @@ def update_user_info(user_id):
         
         # 사용자 정보 업데이트
         update_sql = text(f"""
-            UPDATE USER_INFO 
+            UPDATE user_info 
             SET {', '.join(update_fields)}
             WHERE USER_ID = :user_id AND is_delete = 0
         """)
@@ -1086,7 +1084,7 @@ def get_available_devices():
                 battery_level,
                 device_type,
                 created_at
-            FROM DEVICE_INFO 
+            FROM device_info 
             WHERE is_used = 0 AND location IS NOT NULL
             ORDER BY created_at DESC
         """)
@@ -1121,7 +1119,7 @@ def update_device_status(device_id):
         
         # 기기 상태 업데이트
         update_sql = text("""
-            UPDATE DEVICE_INFO 
+            UPDATE device_info 
             SET is_used = :is_used
             WHERE DEVICE_CODE = :device_code
         """)
