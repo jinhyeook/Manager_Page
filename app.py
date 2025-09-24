@@ -24,10 +24,12 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-db_username = os.getenv('DB_USERNAME', 'root')
-db_password = os.getenv('DB_PASSWORD', 'raider2k25')
-db_host = os.getenv('DB_HOST', 'raider-db.cdok2q8yoc94.ap-northeast-2.rds.amazonaws.com')
-db_name = os.getenv('DB_NAME', 'kick')
+load_dotenv()
+
+db_username = os.getenv('DB_USERNAME')
+db_password = os.getenv('DB_PASSWORD')
+db_host = os.getenv('DB_HOST')
+db_name = os.getenv('DB_NAME')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_username}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
