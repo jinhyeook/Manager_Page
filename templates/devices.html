@@ -90,6 +90,9 @@
     .battery-high {
         background-color: #28a745;
     }
+    .device-in-use {
+        background-color: #dc3545;
+    }
     .device-info-item {
         padding: 8px 0;
         border-bottom: 1px solid #eee;
@@ -111,11 +114,11 @@ $(document).ready(function() {
     initMap();
     loadLowBatteryDevices();
     
-    // 30초마다 데이터 새로고침
+    // 3초마다 데이터 새로고침
     setInterval(function() {
         refreshMap();
         loadLowBatteryDevices();
-    }, 30000);
+    }, 3000);
 });
 
 function initMap() {
@@ -139,12 +142,18 @@ function loadDevices() {
         console.log('기존 마커 제거 완료');
         
         devices.forEach(device => {
-            const batteryColor = device.battery_level > 50 ? 'battery-high' : 
-                               device.battery_level > 20 ? 'battery-medium' : 'battery-low';
+            // status가 'in_use'이면 빨간색, 아니면 배터리 레벨에 따른 색상
+            let markerClass;
+            if (device.status === 'in_use') {
+                markerClass = 'device-in-use';
+            } else {
+                markerClass = device.battery_level > 50 ? 'battery-high' : 
+                             device.battery_level > 20 ? 'battery-medium' : 'battery-low';
+            }
             
             const icon = L.divIcon({
                 className: 'custom-div-icon',
-                html: `<div class="device-marker ${batteryColor}"></div>`,
+                html: `<div class="device-marker ${markerClass}"></div>`,
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
@@ -188,6 +197,9 @@ function showDeviceInfo(device) {
         </div>
         <div class="device-info-item">
             <strong>상태:</strong> ${statusText[device.status] || device.status}
+        </div>
+        <div class="device-info-item">
+            <strong>사용 중:</strong> <span class="${device.status === 'in_use' ? 'text-danger' : 'text-success'}">${device.status === 'in_use' ? '예' : '아니오'}</span>
         </div>
         <div class="device-info-item">
             <strong>마지막 업데이트:</strong> ${new Date(device.last_updated).toLocaleString('ko-KR')}
@@ -252,6 +264,10 @@ function showDeviceModal(deviceId) {
                          <label class="form-label"><strong>상태</strong></label>
                          <input type="text" class="form-control" value="${statusDisplay}" readonly>
                      </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>사용 중</strong></label>
+                        <input type="text" class="form-control" value="${device.status === 'in_use' ? '예' : '아니오'}" readonly>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label"><strong>마지막 업데이트</strong></label>
                         <input type="text" class="form-control" value="${new Date(device.last_updated).toLocaleString('ko-KR')}" readonly>

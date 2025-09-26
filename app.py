@@ -70,13 +70,19 @@ def get_web_devices():
     sql = text(
         """
         SELECT 
-            DEVICE_CODE,
-            ST_X(location) AS latitude,
-            ST_Y(location) AS longitude,
-            battery_level,
-            is_used,
-            created_at
-        FROM device_info
+            d.DEVICE_CODE,
+            COALESCE(ST_X(r.location), ST_X(d.location)) AS latitude,
+            COALESCE(ST_Y(r.location), ST_Y(d.location)) AS longitude,
+            d.battery_level,
+            d.is_used,
+            COALESCE(r.now_time, d.created_at) AS last_updated
+        FROM device_info d
+        LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
+            AND r.now_time = (
+                SELECT MAX(now_time) 
+                FROM device_realtime_log r2 
+                WHERE r2.DEVICE_CODE = d.DEVICE_CODE
+            )
         """
     )
     rows = db.session.execute(sql).mappings().all()
@@ -94,8 +100,9 @@ def get_web_devices():
             'latitude': float(r['latitude']) if r['latitude'] is not None else None,
             'longitude': float(r['longitude']) if r['longitude'] is not None else None,
             'battery_level': r['battery_level'],
+            'is_used': r['is_used'],
             'status': status,
-            'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+            'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
         })
     return jsonify(result)
 
@@ -105,14 +112,20 @@ def get_web_device(device_id):
     sql = text(
         """
         SELECT 
-            DEVICE_CODE,
-            ST_X(location) AS latitude,
-            ST_Y(location) AS longitude,
-            battery_level,
-            is_used,
-            created_at
-        FROM device_info
-        WHERE DEVICE_CODE = :device_code
+            d.DEVICE_CODE,
+            COALESCE(ST_X(r.location), ST_X(d.location)) AS latitude,
+            COALESCE(ST_Y(r.location), ST_Y(d.location)) AS longitude,
+            d.battery_level,
+            d.is_used,
+            COALESCE(r.now_time, d.created_at) AS last_updated
+        FROM device_info d
+        LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
+            AND r.now_time = (
+                SELECT MAX(now_time) 
+                FROM device_realtime_log r2 
+                WHERE r2.DEVICE_CODE = d.DEVICE_CODE
+            )
+        WHERE d.DEVICE_CODE = :device_code
         """
     )
     r = db.session.execute(sql, { 'device_code': device_id }).mappings().first()
@@ -130,8 +143,9 @@ def get_web_device(device_id):
         'latitude': float(r['latitude']) if r['latitude'] is not None else None,
         'longitude': float(r['longitude']) if r['longitude'] is not None else None,
         'battery_level': r['battery_level'],
+        'is_used': r['is_used'],
         'status': status,
-        'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+        'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
     })
 
 # 앱용 개별 디바이스 조회 API
