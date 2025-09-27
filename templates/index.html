@@ -125,12 +125,12 @@ $(document).ready(function() {
     // 지도 초기화
     initMap();
     
-    // 3초마다 데이터 새로고침
+    // 1초마다 데이터 새로고침 (실시간 배터리 업데이트)
     setInterval(function() {
         loadStatistics();
         loadRecentReports();
         refreshMap();
-    }, 3000);
+    }, 1000);
 });
 
 function loadStatistics() {

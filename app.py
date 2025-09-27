@@ -1196,7 +1196,7 @@ def start_device_rental():
         # device_use_log 테이블에 대여 시작 기록 (device_info의 location 사용)
         start_rental_sql = text("""
             INSERT INTO device_use_log (USER_ID, DEVICE_CODE, start_time, start_loc)
-            VALUES (:user_id, :device_code, NOW(), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
+            VALUES (:user_id, :device_code, CONVERT_TZ(NOW(), '+00:00', '+09:00'), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
         """)
         
         db.session.execute(start_rental_sql, {
@@ -1225,11 +1225,11 @@ def start_device_rental():
 # 배터리 소모 계산 함수
 def calculate_battery_drain(device_code, time_minutes):
     """배터리 소모량 계산 (시간 기반)"""
-    # 30초당 1% (30초 = 0.5분)
-    time_drain = time_minutes * 2.0     # 30초당 1% = 1분당 2%
+    # 5초당 1% (1분당 12%)
+    time_drain = time_minutes * 12.0     # 5초당 1% = 1분당 12%
     
     print(f"배터리 소모 계산: {device_code} - 시간: {time_minutes:.1f}분")
-    print(f"소모량: 시간 {time_drain:.1f}% (30초당 1%)")
+    print(f"소모량: 시간 {time_drain:.1f}% (5초당 1%)")
     
     return time_drain
 
@@ -1267,7 +1267,7 @@ def send_realtime_log():
         # 실시간 로그 저장
         realtime_log_sql = text("""
             INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
-            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
+            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), CONVERT_TZ(NOW(), '+00:00', '+09:00'))
         """)
         
         db.session.execute(realtime_log_sql, {
@@ -1279,8 +1279,12 @@ def send_realtime_log():
         
         # 배터리 소모 계산 및 업데이트
         if prev_pos:
-            # 시간 계산 (분 단위)
-            time_diff = (datetime.now() - prev_pos['prev_time']).total_seconds() / 60
+            # 시간 계산 (분 단위) - 한국 시간대로 통일
+            from datetime import timezone, timedelta
+            kst = timezone(timedelta(hours=9))
+            current_time = datetime.now(kst)
+            prev_time = prev_pos['prev_time'].replace(tzinfo=kst) if prev_pos['prev_time'].tzinfo is None else prev_pos['prev_time']
+            time_diff = (current_time - prev_time).total_seconds() / 60
             
             # 배터리 소모량 계산 (시간만 기반)
             battery_drain = calculate_battery_drain(device_code, time_diff)
@@ -1392,7 +1396,7 @@ def end_device_rental():
         # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
         end_rental_sql = text("""
             UPDATE device_use_log 
-            SET end_time = NOW(),
+            SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00'),
                 end_loc = ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326),
                 fee = :fee,
                 moved_distance = :moved_distance

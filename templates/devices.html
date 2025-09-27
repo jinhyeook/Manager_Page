@@ -109,16 +109,21 @@
 let map;
 let markers = [];
 let selectedDevice = null;
+let selectedDeviceId = null; // 현재 선택된 디바이스 ID 추적
 
 $(document).ready(function() {
     initMap();
     loadLowBatteryDevices();
     
-    // 3초마다 데이터 새로고침
+    // 1초마다 데이터 새로고침 (실시간 배터리 업데이트)
     setInterval(function() {
         refreshMap();
         loadLowBatteryDevices();
-    }, 3000);
+        // 선택된 디바이스가 있으면 해당 디바이스 정보 업데이트
+        if (selectedDeviceId) {
+            updateSelectedDeviceInfo();
+        }
+    }, 1000);
 });
 
 function initMap() {
@@ -174,7 +179,12 @@ function loadDevices() {
 
 function showDeviceInfo(device) {
     selectedDevice = device;
+    selectedDeviceId = device.device_id; // 선택된 디바이스 ID 저장
     
+    updateDeviceInfoDisplay(device);
+}
+
+function updateDeviceInfoDisplay(device) {
     const batteryStatus = device.battery_level > 50 ? '양호' : 
                          device.battery_level > 20 ? '주의' : 
                          device.battery_level > 0 ? '충전 필요' : '기기 멈춤';
@@ -182,10 +192,10 @@ function showDeviceInfo(device) {
                         device.battery_level > 20 ? 'text-warning' : 
                         device.battery_level > 0 ? 'text-danger' : 'text-dark';
     
-         const statusText = {
-         'available': '사용 가능',
-         'in_use': '사용 중'
-     };
+    const statusText = {
+        'available': '사용 가능',
+        'in_use': '사용 중'
+    };
     
     const html = `
         <div class="device-info-item">
@@ -213,6 +223,17 @@ function showDeviceInfo(device) {
     `;
     
     $('#device-info').html(html);
+}
+
+function updateSelectedDeviceInfo() {
+    if (!selectedDeviceId) return;
+    
+    $.get(`/api/web/devices/${selectedDeviceId}`, function(device) {
+        selectedDevice = device;
+        updateDeviceInfoDisplay(device);
+    }).fail(function() {
+        console.log('선택된 디바이스 정보 업데이트 실패');
+    });
 }
 
 function showDeviceModal(deviceId) {
@@ -313,6 +334,12 @@ function refreshMap() {
     console.log('refreshMap 호출됨 - 지도 새로고침 시작');
     loadDevices();
     loadLowBatteryDevices();
+    
+    // 선택된 디바이스가 있으면 해당 디바이스 정보도 업데이트
+    if (selectedDeviceId) {
+        updateSelectedDeviceInfo();
+    }
+    
     console.log('refreshMap 완료 - 지도 새로고침 완료');
 }
 </script>
