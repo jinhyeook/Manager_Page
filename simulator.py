@@ -138,9 +138,33 @@ def reset_devices_to_available(device_codes):
         db.session.commit()
         print(f"기기 {len(device_codes)}개를 사용 가능으로 변경하고 마지막 위치를 저장했습니다.")
 
+def calculate_battery_drain(device_code, time_minutes):
+    """배터리 소모량 계산 (시간 기반)"""
+    # 30초당 1% (30초 = 0.5분)
+    time_drain = time_minutes * 2.0     # 30초당 1% = 1분당 2%
+    
+    print(f"배터리 소모 계산: {device_code} - 시간: {time_minutes:.1f}분")
+    print(f"소모량: 시간 {time_drain:.1f}% (30초당 1%)")
+    
+    return time_drain
+
 def update_device_position(device_code, lat, lon, user_id):
-    """기기 위치를 device_realtime_log 테이블에 저장"""
+    """기기 위치를 device_realtime_log 테이블에 저장하고 배터리 소모 계산"""
     with app.app_context():
+        # 이전 위치와 시간 가져오기 (배터리 소모 계산용)
+        prev_position_sql = text("""
+            SELECT 
+                ST_X(location) as prev_lat,
+                ST_Y(location) as prev_lng,
+                now_time as prev_time
+            FROM device_realtime_log 
+            WHERE DEVICE_CODE = :device_code 
+            ORDER BY now_time DESC 
+            LIMIT 1
+        """)
+        
+        prev_pos = db.session.execute(prev_position_sql, {'device_code': device_code}).mappings().first()
+        
         # device_realtime_log 테이블에 실시간 위치 데이터 저장
         sql = text("""
             INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
@@ -152,6 +176,29 @@ def update_device_position(device_code, lat, lon, user_id):
             'lat': lat,
             'lon': lon
         })
+        
+        # 배터리 소모 계산 및 업데이트
+        if prev_pos:
+            # 시간 계산 (분 단위)
+            time_diff = (time.time() - prev_pos['prev_time'].timestamp()) / 60
+            
+            # 배터리 소모량 계산 (시간만 기반)
+            battery_drain = calculate_battery_drain(device_code, time_diff)
+            
+            # 배터리 레벨 업데이트
+            battery_update_sql = text("""
+                UPDATE device_info 
+                SET battery_level = GREATEST(battery_level - :drain, 0)
+                WHERE DEVICE_CODE = :device_code
+            """)
+            
+            db.session.execute(battery_update_sql, {
+                'drain': battery_drain,
+                'device_code': device_code
+            })
+            
+            print(f"배터리 소모: {battery_drain:.1f}% (시간: {time_diff:.1f}분)")
+        
         db.session.commit()
 
 def simulate_movement(device_count=3):

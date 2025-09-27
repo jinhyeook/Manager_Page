@@ -203,16 +203,16 @@ function loadDevices() {
                 markerColor = 'red';
             } else {
                 markerColor = device.battery_level > 50 ? 'green' : 
-                             device.battery_level > 20 ? 'orange' : 'red';
+                             device.battery_level > 20 ? 'orange' : 
+                             device.battery_level > 0 ? 'red' : 'black';
             }
             
             const marker = L.marker([device.latitude, device.longitude])
                 .bindPopup(`
                     <strong>디바이스 ID:</strong> ${device.device_id}<br>
                     <strong>배터리:</strong> ${device.battery_level}%<br>
-                    <strong>상태:</strong> ${device.status}<br>
-                    <strong>사용 중:</strong> ${device.status === 'in_use' ? '예' : '아니오'}<br>
-                    <strong>마지막 업데이트:</strong> ${new Date(device.last_updated).toLocaleString('ko-KR')}
+                    <strong>상태:</strong> ${device.status === 'in_use' ? '사용 중' : '사용 가능'}<br>
+                    ${device.status === 'in_use' && device.current_user_id ? `<strong>사용자:</strong> ${device.current_user_id}` : ''}
                 `)
                 .addTo(map);
             

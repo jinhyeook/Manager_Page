@@ -75,7 +75,8 @@ def get_web_devices():
             COALESCE(ST_Y(r.location), ST_Y(d.location)) AS longitude,
             d.battery_level,
             d.is_used,
-            COALESCE(r.now_time, d.created_at) AS last_updated
+            COALESCE(r.now_time, d.created_at) AS last_updated,
+            u.USER_ID as current_user_id
         FROM device_info d
         LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
             AND r.now_time = (
@@ -83,6 +84,8 @@ def get_web_devices():
                 FROM device_realtime_log r2 
                 WHERE r2.DEVICE_CODE = d.DEVICE_CODE
             )
+        LEFT JOIN device_use_log u ON d.DEVICE_CODE = u.DEVICE_CODE 
+            AND u.end_time IS NULL
         """
     )
     rows = db.session.execute(sql).mappings().all()
@@ -102,6 +105,7 @@ def get_web_devices():
             'battery_level': r['battery_level'],
             'is_used': r['is_used'],
             'status': status,
+            'current_user_id': r['current_user_id'],
             'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
         })
     return jsonify(result)
@@ -117,7 +121,8 @@ def get_web_device(device_id):
             COALESCE(ST_Y(r.location), ST_Y(d.location)) AS longitude,
             d.battery_level,
             d.is_used,
-            COALESCE(r.now_time, d.created_at) AS last_updated
+            COALESCE(r.now_time, d.created_at) AS last_updated,
+            u.USER_ID as current_user_id
         FROM device_info d
         LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
             AND r.now_time = (
@@ -125,6 +130,8 @@ def get_web_device(device_id):
                 FROM device_realtime_log r2 
                 WHERE r2.DEVICE_CODE = d.DEVICE_CODE
             )
+        LEFT JOIN device_use_log u ON d.DEVICE_CODE = u.DEVICE_CODE 
+            AND u.end_time IS NULL
         WHERE d.DEVICE_CODE = :device_code
         """
     )
@@ -145,6 +152,7 @@ def get_web_device(device_id):
         'battery_level': r['battery_level'],
         'is_used': r['is_used'],
         'status': status,
+        'current_user_id': r['current_user_id'],
         'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
     })
 
@@ -1214,6 +1222,17 @@ def start_device_rental():
         print(f"기기 대여 시작 오류: {str(e)}")
         return jsonify({'error': '기기 대여 시작 중 오류가 발생했습니다.'}), 500
 
+# 배터리 소모 계산 함수
+def calculate_battery_drain(device_code, time_minutes):
+    """배터리 소모량 계산 (시간 기반)"""
+    # 30초당 1% (30초 = 0.5분)
+    time_drain = time_minutes * 2.0     # 30초당 1% = 1분당 2%
+    
+    print(f"배터리 소모 계산: {device_code} - 시간: {time_minutes:.1f}분")
+    print(f"소모량: 시간 {time_drain:.1f}% (30초당 1%)")
+    
+    return time_drain
+
 # 실시간 위치 로그 전송 API
 @app.route('/api/device-rental/realtime-log', methods=['POST'])
 def send_realtime_log():
@@ -1231,6 +1250,21 @@ def send_realtime_log():
         if not all([user_id, device_code, latitude, longitude]):
             return jsonify({'error': '필수 정보가 누락되었습니다.'}), 400
         
+        # 이전 위치와 시간 가져오기 (배터리 소모 계산용)
+        prev_position_sql = text("""
+            SELECT 
+                ST_X(location) as prev_lat,
+                ST_Y(location) as prev_lng,
+                now_time as prev_time
+            FROM device_realtime_log 
+            WHERE DEVICE_CODE = :device_code 
+            ORDER BY now_time DESC 
+            LIMIT 1
+        """)
+        
+        prev_pos = db.session.execute(prev_position_sql, {'device_code': device_code}).mappings().first()
+        
+        # 실시간 로그 저장
         realtime_log_sql = text("""
             INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
             VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
@@ -1242,6 +1276,28 @@ def send_realtime_log():
             'latitude': latitude,
             'longitude': longitude
         })
+        
+        # 배터리 소모 계산 및 업데이트
+        if prev_pos:
+            # 시간 계산 (분 단위)
+            time_diff = (datetime.now() - prev_pos['prev_time']).total_seconds() / 60
+            
+            # 배터리 소모량 계산 (시간만 기반)
+            battery_drain = calculate_battery_drain(device_code, time_diff)
+            
+            # 배터리 레벨 업데이트
+            battery_update_sql = text("""
+                UPDATE device_info 
+                SET battery_level = GREATEST(battery_level - :drain, 0)
+                WHERE DEVICE_CODE = :device_code
+            """)
+            
+            db.session.execute(battery_update_sql, {
+                'drain': battery_drain,
+                'device_code': device_code
+            })
+            
+            print(f"배터리 소모: {battery_drain:.1f}% (시간: {time_diff:.1f}분)")
         
         db.session.commit()
         

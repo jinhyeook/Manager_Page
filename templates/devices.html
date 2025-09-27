@@ -176,9 +176,11 @@ function showDeviceInfo(device) {
     selectedDevice = device;
     
     const batteryStatus = device.battery_level > 50 ? '양호' : 
-                         device.battery_level > 20 ? '주의' : '충전 필요';
+                         device.battery_level > 20 ? '주의' : 
+                         device.battery_level > 0 ? '충전 필요' : '기기 멈춤';
     const batteryClass = device.battery_level > 50 ? 'text-success' : 
-                        device.battery_level > 20 ? 'text-warning' : 'text-danger';
+                        device.battery_level > 20 ? 'text-warning' : 
+                        device.battery_level > 0 ? 'text-danger' : 'text-dark';
     
          const statusText = {
          'available': '사용 가능',
@@ -196,14 +198,13 @@ function showDeviceInfo(device) {
             <strong>배터리:</strong> <span class="${batteryClass}">${device.battery_level}% (${batteryStatus})</span>
         </div>
         <div class="device-info-item">
-            <strong>상태:</strong> ${statusText[device.status] || device.status}
+            <strong>상태:</strong> <span class="${device.status === 'in_use' ? 'text-danger' : 'text-success'}">${device.status === 'in_use' ? '사용 중' : '사용 가능'}</span>
         </div>
+        ${device.status === 'in_use' && device.current_user_id ? `
         <div class="device-info-item">
-            <strong>사용 중:</strong> <span class="${device.status === 'in_use' ? 'text-danger' : 'text-success'}">${device.status === 'in_use' ? '예' : '아니오'}</span>
+            <strong>사용자:</strong> <span class="text-primary">${device.current_user_id}</span>
         </div>
-        <div class="device-info-item">
-            <strong>마지막 업데이트:</strong> ${new Date(device.last_updated).toLocaleString('ko-KR')}
-        </div>
+        ` : ''}
         <div class="mt-3">
             <button class="btn btn-primary btn-sm" onclick="showDeviceModal('${device.device_id}')">
                 <i class="fas fa-edit"></i> 상세 정보
@@ -223,9 +224,11 @@ function showDeviceModal(deviceId) {
         console.log('selectedDevice 설정됨:', selectedDevice);
         
         const batteryStatus = device.battery_level > 50 ? '양호' : 
-                             device.battery_level > 20 ? '주의' : '충전 필요';
+                             device.battery_level > 20 ? '주의' : 
+                             device.battery_level > 0 ? '충전 필요' : '기기 멈춤';
         const batteryClass = device.battery_level > 50 ? 'text-success' : 
-                            device.battery_level > 20 ? 'text-warning' : 'text-danger';
+                            device.battery_level > 20 ? 'text-warning' : 
+                            device.battery_level > 0 ? 'text-danger' : 'text-dark';
         
         const statusText = {
             'available': '사용 가능',
@@ -260,18 +263,16 @@ function showDeviceModal(deviceId) {
                         </div>
                         <small class="${batteryClass}">${batteryStatus}</small>
                     </div>
-                                         <div class="mb-3">
-                         <label class="form-label"><strong>상태</strong></label>
-                         <input type="text" class="form-control" value="${statusDisplay}" readonly>
-                     </div>
                     <div class="mb-3">
-                        <label class="form-label"><strong>사용 중</strong></label>
-                        <input type="text" class="form-control" value="${device.status === 'in_use' ? '예' : '아니오'}" readonly>
+                        <label class="form-label"><strong>상태</strong></label>
+                        <input type="text" class="form-control" value="${device.status === 'in_use' ? '사용 중' : '사용 가능'}" readonly>
                     </div>
+                    ${device.status === 'in_use' && device.current_user_id ? `
                     <div class="mb-3">
-                        <label class="form-label"><strong>마지막 업데이트</strong></label>
-                        <input type="text" class="form-control" value="${new Date(device.last_updated).toLocaleString('ko-KR')}" readonly>
+                        <label class="form-label"><strong>사용자</strong></label>
+                        <input type="text" class="form-control" value="${device.current_user_id}" readonly>
                     </div>
+                    ` : ''}
                 </div>
             </div>
         `;
