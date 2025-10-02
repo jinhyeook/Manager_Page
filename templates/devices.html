@@ -63,6 +63,7 @@
             <div class="modal-body" id="deviceModalBody">
                 <!-- 디바이스 정보가 여기에 표시됩니다 -->
             </div>
+            <div id="qrcode"></div>
                          <div class="modal-footer">
                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
              </div>
@@ -257,6 +258,19 @@ function showDeviceModal(deviceId) {
         };
         
         const statusDisplay = statusText[device.status] || device.status;
+
+        // QR 코드 생성
+        $('#qrcode').empty();
+        new QRCode(document.getElementById("qrcode"), {
+            text: device.device_id,
+            width: 128,
+            height: 128,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        
         
         const html = `
             <div class="row">
