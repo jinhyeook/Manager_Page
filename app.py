@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import os
 from sqlalchemy import text
 import requests
@@ -10,6 +10,20 @@ import json
 import hashlib
 import uuid
 import re
+
+# 시간대 통일을 위한 상수
+KST = timezone(timedelta(hours=9))
+
+def get_kst_now():
+    """한국 시간으로 현재 시간 반환"""
+    return datetime.now(KST)
+
+def to_kst(dt):
+    """datetime을 한국 시간으로 변환"""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=KST)
+    else:
+        return dt.astimezone(KST)
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -162,14 +176,20 @@ def get_device(device_id):
     sql = text(
         """
         SELECT 
-            DEVICE_CODE,
-            ST_Y(location) AS latitude,
-            ST_X(location) AS longitude,
-            battery_level,
-            is_used,
-            created_at
-        FROM device_info
-        WHERE DEVICE_CODE = :device_code
+            d.DEVICE_CODE,
+            COALESCE(ST_Y(r.location), ST_Y(d.location)) AS latitude,
+            COALESCE(ST_X(r.location), ST_X(d.location)) AS longitude,
+            d.battery_level,
+            d.is_used,
+            COALESCE(r.now_time, d.created_at) AS last_updated
+        FROM device_info d
+        LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
+            AND r.now_time = (
+                SELECT MAX(now_time) 
+                FROM device_realtime_log r2 
+                WHERE r2.DEVICE_CODE = d.DEVICE_CODE
+            )
+        WHERE d.DEVICE_CODE = :device_code
         """
     )
     r = db.session.execute(sql, { 'device_code': device_id }).mappings().first()
@@ -188,7 +208,7 @@ def get_device(device_id):
         'longitude': float(r['longitude']) if r['longitude'] is not None else None,
         'battery_level': r['battery_level'],
         'status': status,
-        'last_updated': datetime.combine(r['created_at'], datetime.min.time()).isoformat() if r['created_at'] else None
+        'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
     })
 
 # 신고 목록 조회 API
@@ -199,14 +219,16 @@ def get_reports():
         SELECT 
             REPORTED_DEVICE_CODE AS device_id,
             REPORTER_USER_ID AS reporter_user_id,
-            REPORTED_USER_ID AS reported_user_id,
+            REPORTED_USER_ID,
             ST_X(COALESCE(reported_loc, reporter_loc)) AS latitude,
             ST_Y(COALESCE(reported_loc, reporter_loc)) AS longitude,
             report_time,
             is_verified,
             report_case,
-            image
-        FROM report_log
+            image,
+            u.name AS reported_user_name
+        FROM report_log r
+        LEFT JOIN user_info u ON r.REPORTED_USER_ID = u.USER_ID
         ORDER BY report_time DESC
         """
     )
@@ -242,6 +264,8 @@ def get_reports():
             'id': idx,
             'device_id': r['device_id'],
             'user_id': r['reporter_user_id'],
+            'REPORTED_USER_ID': r['REPORTED_USER_ID'],
+            'reported_user_name': r['reported_user_name'],
             'report_type': report_type,
             'description': '',
             'image_data': image_data,  # Base64 인코딩된 이미지 데이터
@@ -1100,15 +1124,21 @@ def get_available_devices():
         # 사용 가능한 기기들만 조회 (is_used = 0)
         devices_sql = text("""
             SELECT 
-                DEVICE_CODE as device_id,
-                ST_Y(location) AS latitude,
-                ST_X(location) AS longitude,
-                battery_level,
-                device_type,
-                created_at
-            FROM device_info 
-            WHERE is_used = 0 AND location IS NOT NULL
-            ORDER BY created_at DESC
+                d.DEVICE_CODE as device_id,
+                COALESCE(ST_Y(r.location), ST_Y(d.location)) AS latitude,
+                COALESCE(ST_X(r.location), ST_X(d.location)) AS longitude,
+                d.battery_level,
+                d.device_type,
+                COALESCE(r.now_time, d.created_at) AS last_updated
+            FROM device_info d
+            LEFT JOIN device_realtime_log r ON d.DEVICE_CODE = r.DEVICE_CODE 
+                AND r.now_time = (
+                    SELECT MAX(now_time) 
+                    FROM device_realtime_log r2 
+                    WHERE r2.DEVICE_CODE = d.DEVICE_CODE
+                )
+            WHERE d.is_used = 0 AND d.location IS NOT NULL
+            ORDER BY d.created_at DESC
         """)
         
         rows = db.session.execute(devices_sql).mappings().all()
@@ -1121,7 +1151,7 @@ def get_available_devices():
                 'longitude': float(row['longitude']) if row['longitude'] is not None else None,
                 'battery_level': row['battery_level'],
                 'device_type': row['device_type'],  # 이 필드가 중요합니다
-                'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                'created_at': row['last_updated'].isoformat() if row['last_updated'] else None
             })
         
         return jsonify(result), 200
@@ -1193,10 +1223,10 @@ def start_device_rental():
         if device['is_used'] == 1:
             return jsonify({'error': '이미 사용 중인 기기입니다.'}), 409
         
-        # device_use_log 테이블에 대여 시작 기록 (device_info의 location 사용)
+        # device_use_log 테이블에 대여 시작 기록 (device_info의 location 사용) - app_last.py와 동일한 방식
         start_rental_sql = text("""
             INSERT INTO device_use_log (USER_ID, DEVICE_CODE, start_time, start_loc)
-            VALUES (:user_id, :device_code, CONVERT_TZ(NOW(), '+00:00', '+09:00'), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
+            VALUES (:user_id, :device_code, NOW(), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
         """)
         
         db.session.execute(start_rental_sql, {
@@ -1225,7 +1255,7 @@ def start_device_rental():
 # 배터리 소모 계산 함수
 def calculate_battery_drain(device_code, time_minutes):
     """배터리 소모량 계산 (시간 기반)"""
-    # 5초당 1% (1분당 12%)
+    # 5초당 1% (1분당 12%) - app_last.py와 동일한 방식
     time_drain = time_minutes * 12.0     # 5초당 1% = 1분당 12%
     
     print(f"배터리 소모 계산: {device_code} - 시간: {time_minutes:.1f}분")
@@ -1264,10 +1294,10 @@ def send_realtime_log():
         
         prev_pos = db.session.execute(prev_position_sql, {'device_code': device_code}).mappings().first()
         
-        # 실시간 로그 저장
+        # 실시간 로그 저장 - app_last.py와 동일한 방식
         realtime_log_sql = text("""
             INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
-            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), CONVERT_TZ(NOW(), '+00:00', '+09:00'))
+            VALUES (:device_code, :user_id, ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326), NOW())
         """)
         
         db.session.execute(realtime_log_sql, {
@@ -1277,31 +1307,40 @@ def send_realtime_log():
             'longitude': longitude
         })
         
-        # 배터리 소모 계산 및 업데이트
+        # 배터리 소모 계산 및 업데이트 - 안전한 시간 계산
         if prev_pos:
-            # 시간 계산 (분 단위) - 한국 시간대로 통일
-            from datetime import timezone, timedelta
-            kst = timezone(timedelta(hours=9))
-            current_time = datetime.now(kst)
-            prev_time = prev_pos['prev_time'].replace(tzinfo=kst) if prev_pos['prev_time'].tzinfo is None else prev_pos['prev_time']
+            # 시간 계산 (분 단위) - 시간대 통일
+            current_time = datetime.now()
+            prev_time = prev_pos['prev_time']
+            
+            # 시간대가 다를 경우를 대비한 안전한 계산
+            if prev_time.tzinfo is None:
+                prev_time = prev_time.replace(tzinfo=None)
+            if current_time.tzinfo is None:
+                current_time = current_time.replace(tzinfo=None)
+            
             time_diff = (current_time - prev_time).total_seconds() / 60
             
-            # 배터리 소모량 계산 (시간만 기반)
-            battery_drain = calculate_battery_drain(device_code, time_diff)
-            
-            # 배터리 레벨 업데이트
-            battery_update_sql = text("""
-                UPDATE device_info 
-                SET battery_level = GREATEST(battery_level - :drain, 0)
-                WHERE DEVICE_CODE = :device_code
-            """)
-            
-            db.session.execute(battery_update_sql, {
-                'drain': battery_drain,
-                'device_code': device_code
-            })
-            
-            print(f"배터리 소모: {battery_drain:.1f}% (시간: {time_diff:.1f}분)")
+            # 최소 5초, 최대 10분 간격으로 제한 (비정상적인 시간 차이 방지)
+            if 0.08 <= time_diff <= 10.0:  # 5초 ~ 10분
+                # 배터리 소모량 계산 (시간만 기반)
+                battery_drain = calculate_battery_drain(device_code, time_diff)
+                
+                # 배터리 레벨 업데이트
+                battery_update_sql = text("""
+                    UPDATE device_info 
+                    SET battery_level = GREATEST(battery_level - :drain, 0)
+                    WHERE DEVICE_CODE = :device_code
+                """)
+                
+                db.session.execute(battery_update_sql, {
+                    'drain': battery_drain,
+                    'device_code': device_code
+                })
+                
+                print(f"배터리 소모: {battery_drain:.1f}% (시간: {time_diff:.1f}분)")
+            else:
+                print(f"비정상적인 시간 차이 감지: {time_diff:.1f}분 - 배터리 소모 계산 건너뜀")
         
         db.session.commit()
         
@@ -1314,7 +1353,7 @@ def send_realtime_log():
         print(f"실시간 로그 전송 오류: {str(e)}")
         return jsonify({'error': '실시간 로그 전송 중 오류가 발생했습니다.'}), 500
 
-# 기기 대여 종료 API (요금 계산 및 거리 측정)
+# 기기 대여 종료 API (요금 계산 및 거리 측정)   
 @app.route('/api/device-rental/end', methods=['POST'])
 def end_device_rental():
     """기기 대여 종료 API"""
@@ -1348,29 +1387,46 @@ def end_device_rental():
         
         print(f"대여 기록 찾음: start_time={rental['start_time']}")
         
-        # 사용 시간 계산 (초 단위)
-        start_time = rental['start_time']
-        end_time = datetime.now()
-        usage_seconds = int((end_time - start_time).total_seconds())
+        # 데이터베이스에서 직접 사용 시간과 요금 계산
+        usage_calculation_sql = text("""
+            SELECT 
+                TIMESTAMPDIFF(SECOND, start_time, NOW()) as usage_seconds,
+                CEIL(TIMESTAMPDIFF(SECOND, start_time, NOW()) / 10.0) * 100 as calculated_fee
+            FROM device_use_log 
+            WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
+        """)
+        
+        usage_result = db.session.execute(usage_calculation_sql, {
+            'user_id': user_id,
+            'device_code': device_code
+        }).mappings().first()
+        
+        if not usage_result:
+            return jsonify({'error': '대여 기록을 찾을 수 없습니다.'}), 404
+        
+        usage_seconds = usage_result['usage_seconds']
+        fee = usage_result['calculated_fee']
         usage_minutes = usage_seconds // 60
         
-        # 요금 계산 (10초마다 100원)
-        # 10초 단위로 올림 계산
-        fee_units = (usage_seconds + 9) // 10  # 10초 단위로 올림
-        fee = fee_units * 100
-        
-        print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초, 요금: {fee}원")
+        print(f"사용 시간: {usage_minutes}분 {usage_seconds % 60}초")
+        print(f"계산된 요금: {fee}원")
         
         # 이동 거리 계산 (Haversine 공식 사용) - 좌표 순서 수정
-        start_latitude = db.session.execute(text("SELECT ST_X(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_latitude = db.session.execute(text("SELECT ST_Y(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                           {'user_id': user_id, 'device_code': device_code}).scalar()
-        start_longitude = db.session.execute(text("SELECT ST_Y(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_longitude = db.session.execute(text("SELECT ST_X(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                            {'user_id': user_id, 'device_code': device_code}).scalar()
+        
+        # 종료 위치를 device_use_log의 end_loc에서 가져오기
+        end_latitude = db.session.execute(text("SELECT ST_Y(end_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                        {'user_id': user_id, 'device_code': device_code}).scalar()
+        end_longitude = db.session.execute(text("SELECT ST_X(end_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+                                         {'user_id': user_id, 'device_code': device_code}).scalar()
         
         print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
         print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
         
-        # 거리 계산 함수 (Haversine 공식)
+        # 거리 계산 함수 (Haversine 공식) - app_last.py와 동일한 로직
         def calculate_distance(lat1, lon1, lat2, lon2):
             from math import radians, cos, sin, asin, sqrt
             
@@ -1390,14 +1446,26 @@ def end_device_rental():
             return distance
         
         # 거리 계산 (좌표 순서 수정: 시작/종료 위치 모두 올바른 순서로 가져옴)
-        moved_distance = calculate_distance(start_latitude, start_longitude, end_latitude, end_longitude)
-        print(f"이동 거리: {moved_distance:.2f}km")
+        if start_latitude is None or start_longitude is None or end_latitude is None or end_longitude is None:
+            print("경고: 좌표 정보가 없습니다. 거리를 0으로 설정합니다.")
+            moved_distance = 0.0
+        else:
+            moved_distance = calculate_distance(start_latitude, start_longitude, end_latitude, end_longitude)
+            print(f"이동 거리: {moved_distance:.2f}km")
+            
+            # 거리가 비정상적으로 큰 경우 경고
+            if moved_distance > 10.0:  # 10km 이상
+                print(f"경고: 비정상적으로 큰 이동 거리 감지: {moved_distance:.2f}km")
+                print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
+                print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
+                # 거리를 0으로 설정
+                moved_distance = 0.0
         
-        # 대여 종료 정보 업데이트 (위도, 경도 순서 수정)
+        # 대여 종료 정보 업데이트 - 요청에서 받은 종료 위치를 end_loc으로 설정
         end_rental_sql = text("""
             UPDATE device_use_log 
-            SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00'),
-                end_loc = ST_GeomFromText(CONCAT('POINT(', :latitude, ' ', :longitude, ')'), 4326),
+            SET end_time = NOW(),
+                end_loc = ST_GeomFromText(CONCAT('POINT(', :end_latitude, ' ', :end_longitude, ')'), 4326),
                 fee = :fee,
                 moved_distance = :moved_distance
             WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
@@ -1407,14 +1475,14 @@ def end_device_rental():
         result1 = db.session.execute(end_rental_sql, {
             'user_id': user_id,
             'device_code': device_code,
-            'latitude': end_latitude,
-            'longitude': end_longitude,
+            'end_latitude': end_latitude,
+            'end_longitude': end_longitude,
             'fee': fee,
             'moved_distance': int(moved_distance * 1000)  # 미터 단위로 변환
         })
         print(f"device_use_log 업데이트 결과: {result1.rowcount}개 행이 업데이트됨")
         
-        # device_info 테이블의 is_used를 0으로 변경
+        # device_info 테이블의 is_used를 0으로 변경 - app_last.py와 동일한 방식
         update_device_sql = text("""
             UPDATE device_info SET is_used = 0 WHERE DEVICE_CODE = :device_code
         """)

@@ -49,6 +49,17 @@
                 </div>
             </div>
         </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-qrcode"></i> QR 코드</h5>
+            </div>
+            <div class="card-body">
+                <div id="qrcode">
+                    <p class="text-muted">디바이스를 선택하면 QR 코드가 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -63,10 +74,9 @@
             <div class="modal-body" id="deviceModalBody">
                 <!-- 디바이스 정보가 여기에 표시됩니다 -->
             </div>
-            <div id="qrcode"></div>
-                         <div class="modal-footer">
-                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
         </div>
     </div>
 </div>
@@ -92,7 +102,7 @@
         background-color: #28a745;
     }
     .device-in-use {
-        background-color: #dc3545;
+        background-color: #6f42c1;
     }
     .device-info-item {
         padding: 8px 0;
@@ -183,6 +193,7 @@ function showDeviceInfo(device) {
     selectedDeviceId = device.device_id; // 선택된 디바이스 ID 저장
     
     updateDeviceInfoDisplay(device);
+    updateQRCode(device.device_id);
 }
 
 function updateDeviceInfoDisplay(device) {
@@ -232,8 +243,22 @@ function updateSelectedDeviceInfo() {
     $.get(`/api/web/devices/${selectedDeviceId}`, function(device) {
         selectedDevice = device;
         updateDeviceInfoDisplay(device);
+        updateQRCode(device.device_id);
     }).fail(function() {
         console.log('선택된 디바이스 정보 업데이트 실패');
+    });
+}
+
+function updateQRCode(deviceId) {
+    // QR 코드 생성
+    $('#qrcode').empty();
+    new QRCode(document.getElementById("qrcode"), {
+        text: deviceId,
+        width: 128,
+        height: 128,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
     });
 }
 
@@ -258,19 +283,6 @@ function showDeviceModal(deviceId) {
         };
         
         const statusDisplay = statusText[device.status] || device.status;
-
-        // QR 코드 생성
-        $('#qrcode').empty();
-        new QRCode(document.getElementById("qrcode"), {
-            text: device.device_id,
-            width: 128,
-            height: 128,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
-        
         
         const html = `
             <div class="row">

@@ -197,10 +197,10 @@ function loadDevices() {
         markers = [];
         
         devices.forEach(device => {
-            // status가 'in_use'이면 빨간색, 아니면 배터리 레벨에 따른 색상
+            // status가 'in_use'이면 보라색, 아니면 배터리 레벨에 따른 색상
             let markerColor;
             if (device.status === 'in_use') {
-                markerColor = 'red';
+                markerColor = '#6f42c1';
             } else {
                 markerColor = device.battery_level > 50 ? 'green' : 
                              device.battery_level > 20 ? 'orange' : 

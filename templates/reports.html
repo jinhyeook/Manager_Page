@@ -31,6 +31,7 @@
                             <tr>
                                 <th>신고 ID</th>
                                 <th>디바이스 ID</th>
+                                <th>신고된 유저</th>
                                 <th>신고 유형</th>
                                 <th>신고일</th>
                                 <th>상태</th>
@@ -39,7 +40,7 @@
                         </thead>
                         <tbody id="reportsTableBody">
                             <tr>
-                                <td colspan="6" class="text-center text-muted">신고 내역을 불러오는 중...</td>
+                                <td colspan="7" class="text-center text-muted">신고 내역을 불러오는 중...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -220,7 +221,7 @@ function displayReports(reportsData) {
     let html = '';
     
     if (reportsData.length === 0) {
-        html = '<tr><td colspan="6" class="text-center text-muted">신고 내역이 없습니다.</td></tr>';
+        html = '<tr><td colspan="7" class="text-center text-muted">신고 내역이 없습니다.</td></tr>';
     } else {
         reportsData.forEach(report => {
             
@@ -231,6 +232,7 @@ function displayReports(reportsData) {
                 <tr onclick="showReportDetail(${report.id})">
                     <td>#${report.id}</td>
                     <td>${report.device_id}</td>
+                    <td>${report.reported_user_name || 'N/A'}</td>
                     <td>${reportTypeText[report.report_type] || report.report_type}</td>
                     <td>${date}</td>
                     <td><span class="badge ${statusClass[report.status]} status-badge">${statusText[report.status]}</span></td>
@@ -453,6 +455,10 @@ function showReportModal(reportId) {
                 <div class="mb-3">
                     <label class="form-label"><strong>디바이스 ID</strong></label>
                     <input type="text" class="form-control" value="${report.device_id}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><strong>신고된 유저</strong></label>
+                    <input type="text" class="form-control" value="${report.reported_user_name || 'N/A'}" readonly>
                 </div>
                 <div class="mb-3">
                     <label class="form-label"><strong>신고 유형</strong></label>
