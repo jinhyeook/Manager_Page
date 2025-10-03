@@ -8,7 +8,7 @@ def get_available_devices(count=3):
     """is_used가 0인 기기들을 랜덤하게 지정된 개수만큼 가져오기"""
     with app.app_context():
         sql = text("""
-            SELECT DEVICE_CODE, ST_X(location) as latitude, ST_Y(location) as longitude
+            SELECT DEVICE_CODE, ST_Y(location) as latitude, ST_X(location) as longitude
             FROM device_info 
             WHERE is_used = 0
             ORDER BY RAND()
@@ -33,6 +33,8 @@ def create_user_session(device_codes):
     with app.app_context():
         # user_info 테이블에서 랜덤하게 사용자들 선택
         random_users = get_random_users(len(device_codes))
+        print(f"선택된 사용자들: {random_users}")
+        
         if len(random_users) < len(device_codes):
             print(f"경고: 요청한 사용자 수({len(device_codes)})보다 사용 가능한 사용자 수({len(random_users)})가 적습니다.")
             # 부족한 만큼 사용자를 반복 사용
@@ -61,8 +63,14 @@ def create_user_session(device_codes):
                 continue
             
             # device_info에서 is_used를 1로 변경
-            update_sql = text("UPDATE device_info SET is_used = 1 WHERE DEVICE_CODE = :device_code")
-            db.session.execute(update_sql, {'device_code': device_code})
+            try:
+                update_sql = text("UPDATE device_info SET is_used = 1 WHERE DEVICE_CODE = :device_code")
+                db.session.execute(update_sql, {'device_code': device_code})
+                print(f"{device_code} -> is_used = 1로 변경 완료")
+            except Exception as e:
+                print(f"기기 상태 변경 중 오류: {e}")
+                db.session.rollback()
+                continue
             
         db.session.commit()
         print(f"기기 {len(device_codes)}개에 대한 사용자 세션을 생성했습니다.")
@@ -87,7 +95,7 @@ def reset_devices_to_available(device_codes):
         for device_code in device_codes:
             # 마지막 좌표를 device_realtime_log에서 가져오기
             last_position_sql = text("""
-                SELECT ST_X(location) as latitude, ST_Y(location) as longitude 
+                SELECT ST_Y(location) as latitude, ST_X(location) as longitude 
                 FROM device_realtime_log 
                 WHERE DEVICE_CODE = :device_code 
                 ORDER BY now_time DESC 
@@ -99,7 +107,7 @@ def reset_devices_to_available(device_codes):
                 # 마지막 좌표를 device_info 테이블에 저장
                 update_sql = text("""
                     UPDATE device_info 
-                    SET location = ST_GeomFromText('POINT(:lat :lon)', 4326),
+                    SET location = ST_GeomFromText('POINT(:lon :lat)', 4326),
                         is_used = 0 
                     WHERE DEVICE_CODE = :device_code
                 """)
@@ -113,7 +121,7 @@ def reset_devices_to_available(device_codes):
                 # device_use_log 테이블의 종료 정보 업데이트 (종료 좌표, 요금, 이동거리 포함)
                 # 시작 좌표 가져오기
                 start_position_sql = text("""
-                    SELECT ST_X(start_loc) as start_lat, ST_Y(start_loc) as start_lng, start_time
+                    SELECT ST_Y(start_loc) as start_lat, ST_X(start_loc) as start_lng, start_time
                     FROM device_use_log 
                     WHERE DEVICE_CODE = :device_code AND end_time IS NULL
                 """)
@@ -149,7 +157,7 @@ def reset_devices_to_available(device_codes):
                     update_use_log_sql = text("""
                         UPDATE device_use_log 
                         SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00'),
-                            end_loc = ST_GeomFromText('POINT(:lat :lon)', 4326),
+                            end_loc = ST_GeomFromText('POINT(:lon :lat)', 4326),
                             fee = :fee,
                             moved_distance = :distance
                         WHERE DEVICE_CODE = :device_code AND end_time IS NULL
@@ -206,31 +214,39 @@ def calculate_battery_drain(device_code, time_minutes):
 def update_device_position(device_code, lat, lon, user_id):
     """기기 위치를 device_realtime_log 테이블에 저장하고 배터리 소모 계산"""
     with app.app_context():
-        # 이전 위치와 시간 가져오기 (배터리 소모 계산용)
-        prev_position_sql = text("""
-            SELECT 
-                ST_X(location) as prev_lat,
-                ST_Y(location) as prev_lng,
-                now_time as prev_time
-            FROM device_realtime_log 
-            WHERE DEVICE_CODE = :device_code 
-            ORDER BY now_time DESC 
-            LIMIT 1
-        """)
-        
-        prev_pos = db.session.execute(prev_position_sql, {'device_code': device_code}).mappings().first()
-        
-        # device_realtime_log 테이블에 실시간 위치 데이터 저장
-        sql = text("""
-            INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
-            VALUES (:device_code, :user_id, ST_GeomFromText('POINT(:lat :lon)', 4326), CONVERT_TZ(NOW(), '+00:00', '+09:00'))
-        """)
-        db.session.execute(sql, {
-            'device_code': device_code,
-            'user_id': user_id,
-            'lat': lat,
-            'lon': lon
-        })
+        try:
+            # 이전 위치와 시간 가져오기 (배터리 소모 계산용)
+            prev_position_sql = text("""
+                SELECT 
+                    ST_Y(location) as prev_lat,
+                    ST_X(location) as prev_lng,
+                    now_time as prev_time
+                FROM device_realtime_log 
+                WHERE DEVICE_CODE = :device_code 
+                ORDER BY now_time DESC 
+                LIMIT 1
+            """)
+            
+            prev_pos = db.session.execute(prev_position_sql, {'device_code': device_code}).mappings().first()
+            
+            # device_realtime_log 테이블에 실시간 위치 데이터 저장
+            sql = text("""
+                INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
+                VALUES (:device_code, :user_id, ST_GeomFromText('POINT(:lon :lat)', 4326), CONVERT_TZ(NOW(), '+00:00', '+09:00'))
+            """)
+            db.session.execute(sql, {
+                'device_code': device_code,
+                'user_id': user_id,
+                'lat': lat,
+                'lon': lon
+            })
+            
+            print(f"위치 업데이트 성공: {device_code} -> ({lat:.6f}, {lon:.6f})")
+            
+        except Exception as e:
+            print(f"위치 업데이트 실패: {device_code} - {str(e)}")
+            db.session.rollback()
+            return
         
         # 배터리 소모 계산 및 업데이트
         if prev_pos:
