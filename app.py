@@ -1384,6 +1384,7 @@ def end_device_rental():
         end_longitude = data.get('end_longitude')
         
         print(f"대여 종료 요청 받음: user_id={user_id}, device_code={device_code}")
+        print(f"요청 데이터: {data}")
         print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
         
         if not all([user_id, device_code, end_latitude, end_longitude]):
@@ -1431,37 +1432,79 @@ def end_device_rental():
         print(f"계산된 요금: {fee}원")
         
         # 이동 거리 계산 (Haversine 공식 사용) - 좌표 순서 수정
-        start_latitude = db.session.execute(text("SELECT ST_Y(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_latitude = db.session.execute(text("SELECT ST_X(start_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                           {'user_id': user_id, 'device_code': device_code}).scalar()
-        start_longitude = db.session.execute(text("SELECT ST_X(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
+        start_longitude = db.session.execute(text("SELECT ST_Y(start_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
                                            {'user_id': user_id, 'device_code': device_code}).scalar()
         
-        # 종료 위치를 device_use_log의 end_loc에서 가져오기
-        end_latitude = db.session.execute(text("SELECT ST_Y(end_loc) as latitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
-                                        {'user_id': user_id, 'device_code': device_code}).scalar()
-        end_longitude = db.session.execute(text("SELECT ST_X(end_loc) as longitude FROM device_use_log WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL"), 
-                                         {'user_id': user_id, 'device_code': device_code}).scalar()
+        # 종료 위치를 device_realtime_log의 마지막 위치에서 가져오기
+        last_realtime_location = db.session.execute(text("""
+            SELECT ST_X(location) as lat, ST_Y(location) as lng 
+            FROM device_realtime_log 
+            WHERE DEVICE_CODE = :device_code 
+            ORDER BY now_time DESC 
+            LIMIT 1
+        """), {'device_code': device_code}).mappings().first()
+        
+        if last_realtime_location:
+            end_latitude = last_realtime_location['lat']
+            end_longitude = last_realtime_location['lng']
+            print(f"device_realtime_log 마지막 위치 사용: lat={end_latitude}, lng={end_longitude}")
+        else:
+            print("경고: device_realtime_log에서 위치를 찾을 수 없습니다. 거리를 0으로 설정합니다.")
+            end_latitude = None
+            end_longitude = None
         
         print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
         print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
+        
+        # 좌표 유효성 검사
+        if start_latitude is None or start_longitude is None:
+            print("경고: 시작 위치 좌표가 없습니다!")
+        if end_latitude is None or end_longitude is None:
+            print("경고: 종료 위치 좌표가 없습니다!")
         
         # 거리 계산 함수 (Haversine 공식) - app_last.py와 동일한 로직
         def calculate_distance(lat1, lon1, lat2, lon2):
             from math import radians, cos, sin, asin, sqrt
             
+            print(f"거리 계산 입력: lat1={lat1}, lon1={lon1}, lat2={lat2}, lon2={lon2}")
+            
+            # 입력값 검증
+            if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
+                print("경고: 좌표에 None 값이 있습니다!")
+                return 0.0
+            
+            # 좌표 범위 검증
+            if not (-90 <= lat1 <= 90) or not (-90 <= lat2 <= 90):
+                print(f"경고: 위도 범위 오류 - lat1={lat1}, lat2={lat2}")
+                return 0.0
+            
+            if not (-180 <= lon1 <= 180) or not (-180 <= lon2 <= 180):
+                print(f"경고: 경도 범위 오류 - lon1={lon1}, lon2={lon2}")
+                return 0.0
+            
             # 지구의 반지름 (km)
             R = 6371
             
             # 위도, 경도를 라디안으로 변환
-            lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+            lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(radians, [lat1, lon1, lat2, lon2])
+            
+            print(f"라디안 변환: lat1_rad={lat1_rad:.6f}, lon1_rad={lon1_rad:.6f}, lat2_rad={lat2_rad:.6f}, lon2_rad={lon2_rad:.6f}")
             
             # Haversine 공식
-            dlat = lat2 - lat1
-            dlon = lon2 - lon1
-            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-            c = 2 * asin(sqrt(a))
-            distance = R * c
+            dlat = lat2_rad - lat1_rad
+            dlon = lon2_rad - lon1_rad
+            print(f"차이: dlat={dlat:.6f}, dlon={dlon:.6f}")
             
+            a = sin(dlat/2)**2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon/2)**2
+            print(f"중간값: a={a:.6f}")
+            
+            c = 2 * asin(sqrt(a))
+            print(f"중간값: c={c:.6f}")
+            
+            distance = R * c
+            print(f"거리 계산 결과: {distance:.6f}km")
             return distance
         
         # 거리 계산 (좌표 순서 수정: 시작/종료 위치 모두 올바른 순서로 가져옴)
@@ -1472,19 +1515,19 @@ def end_device_rental():
             moved_distance = calculate_distance(start_latitude, start_longitude, end_latitude, end_longitude)
             print(f"이동 거리: {moved_distance:.2f}km")
             
-            # 거리가 비정상적으로 큰 경우 경고
-            if moved_distance > 10.0:  # 10km 이상
-                print(f"경고: 비정상적으로 큰 이동 거리 감지: {moved_distance:.2f}km")
-                print(f"시작 위치: lat={start_latitude}, lng={start_longitude}")
-                print(f"종료 위치: lat={end_latitude}, lng={end_longitude}")
-                # 거리를 0으로 설정
-                moved_distance = 0.0
+            # 거리 제한 제거 - 모든 거리를 그대로 사용
         
-        # 대여 종료 정보 업데이트 - 요청에서 받은 종료 위치를 end_loc으로 설정
+        # 대여 종료 정보 업데이트 - device_realtime_log의 마지막 위치를 end_loc으로 설정
         end_rental_sql = text("""
             UPDATE device_use_log 
             SET end_time = NOW(),
-                end_loc = ST_GeomFromText(CONCAT('POINT(', :end_latitude, ' ', :end_longitude, ')'), 4326),
+                end_loc = (
+                    SELECT location 
+                    FROM device_realtime_log 
+                    WHERE DEVICE_CODE = :device_code 
+                    ORDER BY now_time DESC 
+                    LIMIT 1
+                ),
                 fee = :fee,
                 moved_distance = :moved_distance
             WHERE USER_ID = :user_id AND DEVICE_CODE = :device_code AND end_time IS NULL
@@ -1501,14 +1544,39 @@ def end_device_rental():
         })
         print(f"device_use_log 업데이트 결과: {result1.rowcount}개 행이 업데이트됨")
         
-        # device_info 테이블의 is_used를 0으로 변경 - app_last.py와 동일한 방식
+        # device_info 테이블의 location을 device_realtime_log의 마지막 위치로 업데이트하고 is_used를 0으로 변경
         update_device_sql = text("""
-            UPDATE device_info SET is_used = 0 WHERE DEVICE_CODE = :device_code
+            UPDATE device_info 
+            SET location = (
+                SELECT location 
+                FROM device_realtime_log 
+                WHERE DEVICE_CODE = :device_code 
+                ORDER BY now_time DESC 
+                LIMIT 1
+            ),
+                is_used = 0 
+            WHERE DEVICE_CODE = :device_code
         """)
         
         print(f"기기 상태 업데이트 시도: device_code={device_code}")
+        
+        # 업데이트 전 device_info.location 확인
+        before_location = db.session.execute(text("SELECT ST_X(location) as lng, ST_Y(location) as lat FROM device_info WHERE DEVICE_CODE = :device_code"), 
+                                          {'device_code': device_code}).mappings().first()
+        print(f"업데이트 전 device_info.location: {before_location}")
+        
         result2 = db.session.execute(update_device_sql, {'device_code': device_code})
         print(f"기기 상태 업데이트 결과: {result2.rowcount}개 행이 업데이트됨")
+        
+        # 업데이트 후 device_info.location 확인
+        after_location = db.session.execute(text("SELECT ST_X(location) as lng, ST_Y(location) as lat FROM device_info WHERE DEVICE_CODE = :device_code"), 
+                                         {'device_code': device_code}).mappings().first()
+        print(f"업데이트 후 device_info.location: {after_location}")
+        
+        # end_loc 값도 확인
+        end_loc_check = db.session.execute(text("SELECT ST_X(end_loc) as lng, ST_Y(end_loc) as lat FROM device_use_log WHERE DEVICE_CODE = :device_code AND end_time IS NOT NULL ORDER BY end_time DESC LIMIT 1"), 
+                                        {'device_code': device_code}).mappings().first()
+        print(f"device_use_log.end_loc: {end_loc_check}")
         
         if result2.rowcount == 0:
             print(f"경고: device_code '{device_code}'에 해당하는 기기를 찾을 수 없습니다!")

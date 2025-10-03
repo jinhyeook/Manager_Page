@@ -50,7 +50,7 @@ def create_user_session(device_codes):
             try:
                 insert_sql = text("""
                     INSERT INTO device_use_log (USER_ID, DEVICE_CODE, start_time, start_loc)
-                    VALUES (:user_id, :device_code, CONVERT_TZ(NOW(), '+00:00', '+09:00'), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
+                    VALUES (:user_id, :device_code, NOW(), (SELECT location FROM device_info WHERE DEVICE_CODE = :device_code))
                 """)
                 db.session.execute(insert_sql, {
                     'user_id': user_id,
@@ -156,7 +156,7 @@ def reset_devices_to_available(device_codes):
                     # device_use_log 테이블 업데이트
                     update_use_log_sql = text("""
                         UPDATE device_use_log 
-                        SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00'),
+                        SET end_time = NOW(),
                             end_loc = ST_GeomFromText('POINT(:lon :lat)', 4326),
                             fee = :fee,
                             moved_distance = :distance
@@ -174,7 +174,7 @@ def reset_devices_to_available(device_codes):
                     # 시작 정보가 없으면 기본 종료 시간만 업데이트
                     update_use_log_sql = text("""
                         UPDATE device_use_log 
-                        SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00') 
+                        SET end_time = NOW() 
                         WHERE DEVICE_CODE = :device_code AND end_time IS NULL
                     """)
                     db.session.execute(update_use_log_sql, {'device_code': device_code})
@@ -192,7 +192,7 @@ def reset_devices_to_available(device_codes):
                 # device_use_log 테이블의 end_time만 업데이트
                 update_use_log_sql = text("""
                     UPDATE device_use_log 
-                    SET end_time = CONVERT_TZ(NOW(), '+00:00', '+09:00') 
+                    SET end_time = NOW() 
                     WHERE DEVICE_CODE = :device_code AND end_time IS NULL
                 """)
                 db.session.execute(update_use_log_sql, {'device_code': device_code})
@@ -232,7 +232,7 @@ def update_device_position(device_code, lat, lon, user_id):
             # device_realtime_log 테이블에 실시간 위치 데이터 저장
             sql = text("""
                 INSERT INTO device_realtime_log (DEVICE_CODE, USER_ID, location, now_time)
-                VALUES (:device_code, :user_id, ST_GeomFromText('POINT(:lon :lat)', 4326), CONVERT_TZ(NOW(), '+00:00', '+09:00'))
+                VALUES (:device_code, :user_id, ST_GeomFromText('POINT(:lon :lat)', 4326), NOW())
             """)
             db.session.execute(sql, {
                 'device_code': device_code,
