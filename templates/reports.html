@@ -443,6 +443,10 @@ function showReportModal(reportId) {
     const report = reports.find(r => r.id === reportId);
     if (!report) return;
     
+    // selectedReport 설정
+    selectedReport = report;
+    console.log('선택된 신고:', selectedReport);
+    
     const date = new Date(report.report_date).toLocaleString('ko-KR');
     
     const html = `
@@ -505,24 +509,41 @@ function showReportModal(reportId) {
 }
 
 function updateReportStatus(newStatus) {
-    if (!selectedReport) return;
+    if (!selectedReport) {
+        console.error('selectedReport가 없습니다.');
+        alert('선택된 신고가 없습니다.');
+        return;
+    }
     
-    // API 호출로 상태 업데이트
+    console.log('상태 업데이트 시도:', {
+        reportId: selectedReport.id,
+        newStatus: newStatus,
+        selectedReport: selectedReport
+    });
+    
+    // API 호출로 상태 업데이트 (report_id 사용)
     $.ajax({
-        url: `/api/reports/${selectedReport.device_id}/status`,
+        url: `/api/reports/${selectedReport.id}/status`,
         method: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify({
             status: newStatus
         }),
         success: function(response) {
+            console.log('상태 업데이트 성공:', response);
             $('#reportModal').modal('hide');
             alert('상태가 업데이트되었습니다.');
             loadReports(); // 신고 목록 새로고침
         },
         error: function(xhr) {
+            console.error('상태 업데이트 실패:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                responseJSON: xhr.responseJSON
+            });
             const error = xhr.responseJSON ? xhr.responseJSON.error : '상태 업데이트 중 오류가 발생했습니다.';
-            alert('오류: ' + error);
+            alert('오류: ' + error + ' (상태 코드: ' + xhr.status + ')');
         }
     });
 }

@@ -217,6 +217,7 @@ def get_reports():
     sql = text(
         """
         SELECT 
+            r.id,
             REPORTED_DEVICE_CODE AS device_id,
             REPORTER_USER_ID AS reporter_user_id,
             REPORTED_USER_ID,
@@ -261,7 +262,7 @@ def get_reports():
                 image_data = None
         
         result.append({
-            'id': idx,
+            'id': r['id'],  # 실제 데이터베이스 ID 사용
             'device_id': r['device_id'],
             'user_id': r['reporter_user_id'],
             'REPORTED_USER_ID': r['REPORTED_USER_ID'],
@@ -406,7 +407,10 @@ def create_user():
 # 신고 상태 업데이트 API (해결/미해결 처리)
 @app.route('/api/reports/<report_id>/status', methods=['PUT'])
 def update_report_status(report_id):
+    print(f"신고 상태 업데이트 요청: report_id={report_id}")
     data = request.get_json()
+    print(f"요청 데이터: {data}")
+    
     try:
         # is_verified: 0=dismissed(해결 대기 중), 1=resolved, NULL=기타
         is_verified = 0
@@ -415,18 +419,32 @@ def update_report_status(report_id):
         elif data['status'] == 'dismissed':
             is_verified = 0  # 해결 대기 중으로 설정
         
+        print(f"설정할 is_verified 값: {is_verified}")
+        
+        # 먼저 해당 report_id가 존재하는지 확인
+        check_sql = text("SELECT id, REPORTED_DEVICE_CODE FROM report_log WHERE id = :report_id")
+        check_result = db.session.execute(check_sql, {'report_id': report_id}).mappings().first()
+        
+        if not check_result:
+            print(f"신고 ID {report_id}를 찾을 수 없습니다.")
+            return jsonify({'error': '신고를 찾을 수 없습니다.'}), 404
+        
+        print(f"찾은 신고: id={check_result['id']}, device_code={check_result['REPORTED_DEVICE_CODE']}")
+        
         sql = text(
             """
             UPDATE report_log 
             SET is_verified = :is_verified
-            WHERE REPORTED_DEVICE_CODE = :device_code
+            WHERE id = :report_id
             """
         )
         result = db.session.execute(sql, {
             'is_verified': is_verified,
-            'device_code': report_id
+            'report_id': report_id
         })
         db.session.commit()
+        
+        print(f"업데이트된 행 수: {result.rowcount}")
         
         if result.rowcount > 0:
             return jsonify({'message': '신고 상태가 업데이트되었습니다.'})
@@ -434,6 +452,7 @@ def update_report_status(report_id):
             return jsonify({'error': '신고를 찾을 수 없습니다.'}), 404
     except Exception as e:
         db.session.rollback()
+        print(f"신고 상태 업데이트 오류: {str(e)}")
         return jsonify({'error': f'상태 업데이트 중 오류가 발생했습니다: {str(e)}'}), 500
 
 # 통계 데이터 조회 API (디바이스, 사용자, 신고 통계)

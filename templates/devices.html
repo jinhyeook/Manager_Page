@@ -157,34 +157,137 @@ function loadDevices() {
         markers = [];
         console.log('기존 마커 제거 완료');
         
+        // 위치별로 기기들을 그룹화 (소수점 4자리 기준)
+        const deviceGroups = {};
         devices.forEach(device => {
-            // status가 'in_use'이면 빨간색, 아니면 배터리 레벨에 따른 색상
+            const key = `${device.latitude.toFixed(4)}_${device.longitude.toFixed(4)}`;
+            if (!deviceGroups[key]) {
+                deviceGroups[key] = [];
+            }
+            deviceGroups[key].push(device);
+        });
+        
+        // 그룹별로 마커 생성
+        Object.keys(deviceGroups).forEach(key => {
+            const groupDevices = deviceGroups[key];
+            const firstDevice = groupDevices[0];
+            
+            // status가 'in_use'이면 보라색, 아니면 배터리 레벨에 따른 색상
             let markerClass;
-            if (device.status === 'in_use') {
+            if (firstDevice.status === 'in_use') {
                 markerClass = 'device-in-use';
             } else {
-                markerClass = device.battery_level > 50 ? 'battery-high' : 
-                             device.battery_level > 20 ? 'battery-medium' : 'battery-low';
+                markerClass = firstDevice.battery_level > 50 ? 'battery-high' : 
+                             firstDevice.battery_level > 20 ? 'battery-medium' : 'battery-low';
             }
             
             const icon = L.divIcon({
                 className: 'custom-div-icon',
-                html: `<div class="device-marker ${markerClass}"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                html: `
+                    <div class="device-marker ${markerClass}" style="
+                        width: ${groupDevices.length > 1 ? '25px' : '20px'}; 
+                        height: ${groupDevices.length > 1 ? '25px' : '20px'};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: ${groupDevices.length > 1 ? '12px' : '10px'};
+                    ">
+                        ${groupDevices.length > 1 ? groupDevices.length : ''}
+                    </div>
+                `,
+                iconSize: [groupDevices.length > 1 ? 25 : 20, groupDevices.length > 1 ? 25 : 20],
+                iconAnchor: [groupDevices.length > 1 ? 12.5 : 10, groupDevices.length > 1 ? 12.5 : 10]
             });
             
-            const marker = L.marker([device.latitude, device.longitude], {icon: icon})
+            const marker = L.marker([firstDevice.latitude, firstDevice.longitude], {icon: icon})
                 .addTo(map);
             
             marker.on('click', function() {
-                showDeviceInfo(device);
+                if (groupDevices.length === 1) {
+                    // 단일 기기
+                    showDeviceInfo(groupDevices[0]);
+                } else {
+                    // 겹쳐있는 기기들 - 선택할 수 있는 목록 표시
+                    showDeviceSelectionModal(groupDevices);
+                }
             });
             
             markers.push(marker);
         });
         
         console.log(`${markers.length}개의 마커 생성 완료`);
+    });
+}
+
+function showDeviceSelectionModal(devices) {
+    // 겹쳐있는 기기들을 선택할 수 있는 모달 표시
+    let modalContent = `
+        <div class="modal fade" id="deviceSelectionModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">기기 선택</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>같은 위치에 있는 기기들입니다. 선택하세요:</p>
+                        <div class="list-group">
+    `;
+    
+    devices.forEach(device => {
+        const batteryStatus = device.battery_level > 50 ? '양호' : 
+                             device.battery_level > 20 ? '주의' : 
+                             device.battery_level > 0 ? '충전 필요' : '기기 멈춤';
+        const batteryClass = device.battery_level > 50 ? 'text-success' : 
+                            device.battery_level > 20 ? 'text-warning' : 
+                            device.battery_level > 0 ? 'text-danger' : 'text-dark';
+        
+        modalContent += `
+            <button type="button" class="list-group-item list-group-item-action" onclick="selectDeviceFromModal('${device.device_id}')">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">${device.device_id}</h6>
+                    <small class="${device.status === 'in_use' ? 'text-danger' : 'text-success'}">${device.status === 'in_use' ? '사용 중' : '사용 가능'}</small>
+                </div>
+                <p class="mb-1">
+                    <span class="${batteryClass}">배터리: ${device.battery_level}% (${batteryStatus})</span>
+                </p>
+                ${device.status === 'in_use' && device.current_user_id ? `<small>사용자: ${device.current_user_id}</small>` : ''}
+            </button>
+        `;
+    });
+    
+    modalContent += `
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거
+    $('#deviceSelectionModal').remove();
+    
+    // 새 모달 추가
+    $('body').append(modalContent);
+    
+    // 모달 표시
+    $('#deviceSelectionModal').modal('show');
+}
+
+function selectDeviceFromModal(deviceId) {
+    // 모달 닫기
+    $('#deviceSelectionModal').modal('hide');
+    
+    // 선택된 기기 정보 가져오기
+    $.get(`/api/web/devices/${deviceId}`, function(device) {
+        showDeviceInfo(device);
+    }).fail(function() {
+        console.log('선택된 디바이스 정보 가져오기 실패');
     });
 }
 

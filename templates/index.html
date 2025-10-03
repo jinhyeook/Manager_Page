@@ -196,32 +196,84 @@ function loadDevices() {
         markers.forEach(marker => map.removeLayer(marker));
         markers = [];
         
+        // 위치별로 기기들을 그룹화 (소수점 4자리 기준)
+        const deviceGroups = {};
         devices.forEach(device => {
+            const key = `${device.latitude.toFixed(4)}_${device.longitude.toFixed(4)}`;
+            if (!deviceGroups[key]) {
+                deviceGroups[key] = [];
+            }
+            deviceGroups[key].push(device);
+        });
+        
+        // 그룹별로 마커 생성
+        Object.keys(deviceGroups).forEach(key => {
+            const groupDevices = deviceGroups[key];
+            const firstDevice = groupDevices[0];
+            
             // status가 'in_use'이면 보라색, 아니면 배터리 레벨에 따른 색상
             let markerColor;
-            if (device.status === 'in_use') {
+            if (firstDevice.status === 'in_use') {
                 markerColor = '#6f42c1';
             } else {
-                markerColor = device.battery_level > 50 ? 'green' : 
-                             device.battery_level > 20 ? 'orange' : 
-                             device.battery_level > 0 ? 'red' : 'black';
+                markerColor = firstDevice.battery_level > 50 ? 'green' : 
+                             firstDevice.battery_level > 20 ? 'orange' : 
+                             firstDevice.battery_level > 0 ? 'red' : 'black';
             }
             
-            const marker = L.marker([device.latitude, device.longitude])
-                .bindPopup(`
+            let popupContent;
+            if (groupDevices.length === 1) {
+                // 단일 기기
+                const device = groupDevices[0];
+                popupContent = `
                     <strong>디바이스 ID:</strong> ${device.device_id}<br>
                     <strong>배터리:</strong> ${device.battery_level}%<br>
                     <strong>상태:</strong> ${device.status === 'in_use' ? '사용 중' : '사용 가능'}<br>
                     ${device.status === 'in_use' && device.current_user_id ? `<strong>사용자:</strong> ${device.current_user_id}` : ''}
-                `)
+                `;
+            } else {
+                // 겹쳐있는 기기들
+                popupContent = `
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <strong>겹쳐있는 기기들 (${groupDevices.length}개):</strong><br><br>
+                        ${groupDevices.map(device => `
+                            <div style="border-bottom: 1px solid #eee; padding: 5px 0;">
+                                <strong>${device.device_id}</strong><br>
+                                <small>배터리: ${device.battery_level}% | 상태: ${device.status === 'in_use' ? '사용 중' : '사용 가능'}</small>
+                                ${device.status === 'in_use' && device.current_user_id ? `<br><small>사용자: ${device.current_user_id}</small>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            const marker = L.marker([firstDevice.latitude, firstDevice.longitude])
+                .bindPopup(popupContent)
                 .addTo(map);
             
-            // status 상태와 배터리 레벨에 따른 아이콘 색상
+            // 마커 아이콘 설정
             const icon = L.divIcon({
                 className: 'custom-div-icon',
-                html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                html: `
+                    <div style="
+                        background-color: ${markerColor}; 
+                        width: ${groupDevices.length > 1 ? '25px' : '20px'}; 
+                        height: ${groupDevices.length > 1 ? '25px' : '20px'}; 
+                        border-radius: 50%; 
+                        border: 2px solid white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: ${groupDevices.length > 1 ? '12px' : '10px'};
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    ">
+                        ${groupDevices.length > 1 ? groupDevices.length : ''}
+                    </div>
+                `,
+                iconSize: [groupDevices.length > 1 ? 25 : 20, groupDevices.length > 1 ? 25 : 20],
+                iconAnchor: [groupDevices.length > 1 ? 12.5 : 10, groupDevices.length > 1 ? 12.5 : 10]
             });
             
             marker.setIcon(icon);
