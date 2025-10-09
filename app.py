@@ -1156,7 +1156,7 @@ def get_available_devices():
                     FROM device_realtime_log r2 
                     WHERE r2.DEVICE_CODE = d.DEVICE_CODE
                 )
-            WHERE d.is_used = 0 AND d.location IS NOT NULL
+            WHERE d.is_used = 0 AND d.location IS NOT NULL AND d.battery_level > 0
             ORDER BY d.created_at DESC
         """)
         
