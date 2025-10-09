@@ -15,4 +15,3 @@ flask 서버로 실행시 <br>
 2. sudo systemctl start Manager_Page
 
 3. sudo systemctl start nginx
-
