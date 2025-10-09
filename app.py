@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
@@ -10,6 +10,7 @@ import json
 import hashlib
 import uuid
 import re
+from functools import wraps
 
 # 시간대 통일을 위한 상수
 KST = timezone(timedelta(hours=9))
@@ -47,34 +48,189 @@ db_name = os.getenv('DB_NAME')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_username}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 db = SQLAlchemy(app)
 CORS(app)
 
+############################ 관리자 인증 관련 함수들 #########################
+
+def login_required(f):
+    """관리자 로그인 필요 데코레이터"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_logged_in' not in session or not session['admin_logged_in']:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def hash_password(password):
+    """비밀번호 해시화"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password, hashed):
+    """비밀번호 검증"""
+    return hash_password(password) == hashed
+
 ############################ 관리자 웹페이지 매핑 API들 #########################
 
-# 메인 대시보드 페이지
+# 관리자 로그인 페이지
+@app.route('/login')
+def admin_login():
+    return render_template('login.html')
+
+# 루트 경로를 로그인 페이지로 설정
 @app.route('/')
-def index():
+def root():
+    return render_template('login.html')
+
+# 관리자 로그인 API
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login_api():
+    """관리자 로그인 API"""
+    try:
+        data = request.get_json()
+        manager_id = data.get('manager_id')
+        manager_pw = data.get('manager_pw')
+        
+        print(f"로그인 시도: manager_id={manager_id}")
+        
+        if not manager_id or not manager_pw:
+            print("필수 필드 누락")
+            return jsonify({
+                'success': False,
+                'message': '관리자 ID와 비밀번호를 입력해주세요.'
+            }), 400
+        
+        # 데이터베이스에서 관리자 정보 조회
+        sql = text("""
+            SELECT manager_id, manager_pw, position, create_at
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        """)
+        
+        print(f"SQL 실행: {sql}")
+        manager = db.session.execute(sql, {'manager_id': manager_id}).mappings().first()
+        print(f"조회 결과: {manager}")
+        
+        if not manager:
+            print("관리자 ID 없음")
+            return jsonify({
+                'success': False,
+                'message': '존재하지 않는 관리자 ID입니다.'
+            }), 401
+        
+        # 비밀번호 검증 (평문 비교)
+        print(f"비밀번호 검증: 입력={manager_pw}, 저장된 비밀번호={manager['manager_pw']}")
+        if manager_pw != manager['manager_pw']:
+            print("비밀번호 불일치")
+            return jsonify({
+                'success': False,
+                'message': '비밀번호가 올바르지 않습니다.'
+            }), 401
+        
+        # 세션에 관리자 정보 저장
+        session['admin_logged_in'] = True
+        session['admin_id'] = manager['manager_id']
+        session['admin_position'] = manager['position']
+        session['admin_create_at'] = manager['create_at'].isoformat() if manager['create_at'] else None
+        
+        return jsonify({
+            'success': True,
+            'message': '로그인 성공',
+            'redirect_url': '/dashboard',
+            'admin_info': {
+                'manager_id': manager['manager_id'],
+                'position': manager['position'],
+                'create_at': manager['create_at'].isoformat() if manager['create_at'] else None
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"관리자 로그인 오류: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '로그인 중 오류가 발생했습니다.'
+        }), 500
+
+# 관리자 로그아웃 API
+@app.route('/api/admin/logout', methods=['POST'])
+def admin_logout():
+    """관리자 로그아웃 API"""
+    session.clear()
+    return jsonify({
+        'success': True,
+        'message': '로그아웃되었습니다.'
+    }), 200
+
+# 관리자 정보 조회 API
+@app.route('/api/admin/info')
+@login_required
+def admin_info():
+    """현재 로그인된 관리자 정보 조회"""
+    return jsonify({
+        'manager_id': session.get('admin_id'),
+        'position': session.get('admin_position'),
+        'create_at': session.get('admin_create_at')
+    }), 200
+
+# 관리자 계정 확인 API (디버깅용)
+@app.route('/api/admin/check')
+def check_admin_accounts():
+    """데이터베이스의 관리자 계정 확인 (디버깅용)"""
+    try:
+        sql = text("SELECT manager_id, position, create_at FROM manager_info")
+        managers = db.session.execute(sql).mappings().all()
+        
+        result = []
+        for manager in managers:
+            result.append({
+                'manager_id': manager['manager_id'],
+                'position': manager['position'],
+                'create_at': manager['create_at'].isoformat() if manager['create_at'] else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'count': len(result),
+            'managers': result
+        }), 200
+        
+    except Exception as e:
+        print(f"관리자 계정 확인 오류: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# 메인 대시보드 페이지
+@app.route('/dashboard')
+@login_required
+def dashboard():
     return render_template('index.html')
 
 # 디바이스 관리 페이지
 @app.route('/devices')
+@login_required
 def devices():
     return render_template('devices.html')
 
 # 신고 관리 페이지
 @app.route('/reports')
+@login_required
 def reports():
     return render_template('reports.html')
 
 # 사용자 관리 페이지
 @app.route('/users')
+@login_required
 def users():
     return render_template('users.html')
 
 # 통계 페이지
 @app.route('/statistics')
+@login_required
 def statistics():
     return render_template('statistics.html')
 
@@ -1909,9 +2065,10 @@ def rag_chatbot():
             당신은 rAider 킥보드 공유 서비스 전문가입니다. 다음 정보를 바탕으로 사용자의 질문에 답변해주세요.
 
             컨텍스트: {context}
-            사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요. 
+            사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요.
             답변은 친절하고 구체적으로 작성해주세요.
             답변을 생성할 때는 예시에 맞게 앱과 관련된 질문만 답변하도록 해주세요.
+            질문이 영어라면 답변을 영어로 변역해 답변해주세요.
 
             - 예시1
             사용자 : 5+5는 뭐야?
