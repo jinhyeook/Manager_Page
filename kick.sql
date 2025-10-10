@@ -69,9 +69,10 @@ CREATE TABLE report_log (
     FOREIGN KEY (REPORTED_DEVICE_CODE) REFERENCES device_info(DEVICE_CODE)
 );
 
-CREATE TABLE `kick`.`manager_info` (
-  `manager_id` VARCHAR(255) NOT NULL,
-  `manager_pw` VARCHAR(255) NOT NULL,
-  `position` VARCHAR(45) NOT NULL,
-  `create_at` DATE NOT NULL,
-  PRIMARY KEY (`manager_id`));
+CREATE TABLE manager_info (
+    manager_id VARCHAR(255) NOT NULL,
+    manager_pw VARCHAR(255) NOT NULL,
+    position VARCHAR(50) NOT NULL,
+    create_at DATE DEFAULT (CURRENT_DATE),
+    PRIMARY KEY (manager_id)
+);
