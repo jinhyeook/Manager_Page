@@ -1,31 +1,8 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime, timezone, timedelta
-import os
+from datetime import datetime
 from sqlalchemy import text
-import requests
-import base64
-import json
-import hashlib
-import uuid
-import re
-from functools import wraps
-
-# 시간대 통일을 위한 상수
-KST = timezone(timedelta(hours=9))
-
-def get_kst_now():
-    """한국 시간으로 현재 시간 반환"""
-    return datetime.now(KST)
-
-def to_kst(dt):
-    """datetime을 한국 시간으로 변환"""
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=KST)
-    else:
-        return dt.astimezone(KST)
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -35,7 +12,14 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHistory
 from langchain.memory import ChatMessageHistory
 from dotenv import load_dotenv
+from functools import wraps
 
+import requests
+import base64
+import json
+import uuid
+import re
+import os
 
 app = Flask(__name__)
 
@@ -64,13 +48,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def hash_password(password):
-    """비밀번호 해시화"""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(password, hashed):
-    """비밀번호 검증"""
-    return hash_password(password) == hashed
 
 ############################ 관리자 웹페이지 매핑 API들 #########################
 
@@ -104,7 +81,7 @@ def admin_login_api():
         
         # 데이터베이스에서 관리자 정보 조회
         sql = text("""
-            SELECT manager_id, manager_pw, position, create_at
+            SELECT manager_id, manager_pw, position
             FROM manager_info 
             WHERE manager_id = :manager_id
         """)
@@ -133,7 +110,6 @@ def admin_login_api():
         session['admin_logged_in'] = True
         session['admin_id'] = manager['manager_id']
         session['admin_position'] = manager['position']
-        session['admin_create_at'] = manager['create_at'].isoformat() if manager['create_at'] else None
         
         return jsonify({
             'success': True,
@@ -141,8 +117,7 @@ def admin_login_api():
             'redirect_url': '/dashboard',
             'admin_info': {
                 'manager_id': manager['manager_id'],
-                'position': manager['position'],
-                'create_at': manager['create_at'].isoformat() if manager['create_at'] else None
+                'position': manager['position']
             }
         }), 200
         
@@ -170,8 +145,7 @@ def admin_info():
     """현재 로그인된 관리자 정보 조회"""
     return jsonify({
         'manager_id': session.get('admin_id'),
-        'position': session.get('admin_position'),
-        'create_at': session.get('admin_create_at')
+        'position': session.get('admin_position')
     }), 200
 
 # 관리자 계정 확인 API (디버깅용)
@@ -179,15 +153,14 @@ def admin_info():
 def check_admin_accounts():
     """데이터베이스의 관리자 계정 확인 (디버깅용)"""
     try:
-        sql = text("SELECT manager_id, position, create_at FROM manager_info")
+        sql = text("SELECT manager_id, position FROM manager_info")
         managers = db.session.execute(sql).mappings().all()
         
         result = []
         for manager in managers:
             result.append({
                 'manager_id': manager['manager_id'],
-                'position': manager['position'],
-                'create_at': manager['create_at'].isoformat() if manager['create_at'] else None
+                'position': manager['position']
             })
         
         return jsonify({
@@ -237,10 +210,21 @@ def statistics():
 # 웹 관리자용 디바이스 목록 조회 API
 @app.route('/api/web/devices')
 def get_web_devices():
+    # 페이징 파라미터 받기
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    # 전체 개수 조회
+    count_sql = text("SELECT COUNT(*) as total FROM device_info")
+    total_count = db.session.execute(count_sql).scalar()
+    
+    # 페이징된 데이터 조회
+    offset = (page - 1) * per_page
     sql = text(
         """
         SELECT 
             d.DEVICE_CODE,
+            d.device_type,
             COALESCE(ST_X(r.location), ST_X(d.location)) AS latitude,
             COALESCE(ST_Y(r.location), ST_Y(d.location)) AS longitude,
             d.battery_level,
@@ -255,13 +239,17 @@ def get_web_devices():
                 WHERE r2.DEVICE_CODE = d.DEVICE_CODE
             )
         LEFT JOIN device_use_log u ON d.DEVICE_CODE = u.DEVICE_CODE 
-            AND u.end_time IS NULL
+            AND u.end_time IS NULL 
+            AND d.is_used = 1
+        ORDER BY d.created_at DESC
+        LIMIT :per_page OFFSET :offset
         """
     )
-    rows = db.session.execute(sql).mappings().all()
+    rows = db.session.execute(sql, {'per_page': per_page, 'offset': offset}).mappings().all()
+    
     # 프론트 호환: id는 일련번호로 제공
     result = []
-    for idx, r in enumerate(rows, start=1):
+    for idx, r in enumerate(rows, start=offset + 1):
         # is_used 값을 상태로 변환 (기본값은 available)
         status = 'available'
         if r['is_used'] == 1:
@@ -270,6 +258,7 @@ def get_web_devices():
         result.append({
             'id': idx,
             'device_id': r['DEVICE_CODE'],
+            'device_type': r['device_type'] or '킥보드',  # 기본값 설정
             'latitude': float(r['latitude']) if r['latitude'] is not None else None,
             'longitude': float(r['longitude']) if r['longitude'] is not None else None,
             'battery_level': r['battery_level'],
@@ -278,7 +267,17 @@ def get_web_devices():
             'current_user_id': r['current_user_id'],
             'last_updated': r['last_updated'].isoformat() if r['last_updated'] else None
         })
-    return jsonify(result)
+    
+    # 페이징 정보 포함하여 반환
+    return jsonify({
+        'devices': result,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_count,
+            'pages': (total_count + per_page - 1) // per_page
+        }
+    })
 
 # 웹 관리자용 개별 디바이스 상세 조회 API
 @app.route('/api/web/devices/<device_id>')
@@ -301,7 +300,8 @@ def get_web_device(device_id):
                 WHERE r2.DEVICE_CODE = d.DEVICE_CODE
             )
         LEFT JOIN device_use_log u ON d.DEVICE_CODE = u.DEVICE_CODE 
-            AND u.end_time IS NULL
+            AND u.end_time IS NULL 
+            AND d.is_used = 1
         WHERE d.DEVICE_CODE = :device_code
         """
     )
@@ -406,16 +406,12 @@ def get_reports():
         # 이미지 데이터 처리
         image_data = None
         if r['image']:
-            try:
-                # 이미지 데이터를 Base64로 인코딩
-                if isinstance(r['image'], bytes):
-                    image_data = base64.b64encode(r['image']).decode('utf-8')
-                elif isinstance(r['image'], str):
-                    # 이미 Base64 문자열인 경우
-                    image_data = r['image']
-            except Exception as e:
-                print(f"이미지 인코딩 오류: {str(e)}")
-                image_data = None
+            # 이미지 데이터를 Base64로 인코딩
+            if isinstance(r['image'], bytes):
+                image_data = base64.b64encode(r['image']).decode('utf-8')
+            elif isinstance(r['image'], str):
+                # 이미 Base64 문자열인 경우
+                image_data = r['image']
         
         result.append({
             'id': r['id'],  # 실제 데이터베이스 ID 사용
@@ -792,9 +788,6 @@ API_GATEWAY_KEY = os.getenv("API_GATEWAY_KEY")
 
 # 클로바 OCR API 호출 함수 (운전면허증 정보 추출)
 def call_clova_ocr(image_base64):
-    with open("last_upload.jpg", "wb") as f:
-        f.write(base64.b64decode(image_base64))
-
     headers = {
         "X-OCR-SECRET": OCR_SECRET_KEY,
         "Content-Type": "application/json",
@@ -957,9 +950,7 @@ def is_valid_ssn(ssn):
                 year += 2000
         
         # 날짜 유효성 검사
-        from datetime import datetime
         datetime(year, month, day)
-        
         return True
     except (ValueError, IndexError):
         return False
@@ -1268,21 +1259,13 @@ def update_user_info(user_id):
             WHERE USER_ID = :user_id AND is_delete = 0
         """)
         
-        try:
-            result = db.session.execute(update_sql, params)
-            db.session.commit()
-            
-            if result.rowcount > 0:
-                return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
-            else:
-                return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
-                
-        except Exception as db_error:
-            db.session.rollback()
-            if "personal_number" in str(db_error):
-                return jsonify({'error': '이미 사용 중인 주민번호입니다.'}), 409
-            else:
-                raise db_error
+        result = db.session.execute(update_sql, params)
+        db.session.commit()
+        
+        if result.rowcount > 0:
+            return jsonify({'message': '사용자 정보가 성공적으로 업데이트되었습니다.'}), 200
+        else:
+            return jsonify({'error': '사용자를 찾을 수 없습니다.'}), 404
             
     except Exception as e:
         db.session.rollback()
@@ -1942,7 +1925,6 @@ def initialize_documents():
         print(f"문서 경로: {url}")
         
         # 파일 존재 확인
-        import os
         if not os.path.exists(url):
             print(f" 파일이 존재하지 않습니다: {url}")
             return False
@@ -1986,17 +1968,13 @@ def initialize_vector_store():
         
         if os.path.exists(persist_directory) and os.listdir(persist_directory):
             print("기존 벡터DB 로드 시도...")
-            try:
-                # 기존 벡터DB 로드
-                vector_store = Chroma(
-                    persist_directory=persist_directory,
-                    embedding_function=embedding_function
-                )
-                print(f"기존 벡터DB 로드됨. 문서 수: {vector_store._collection.count()}")
-                return True
-            except Exception as e:
-                print(f"기존 벡터DB 로드 실패: {e}")
-                vector_store = None
+            # 기존 벡터DB 로드
+            vector_store = Chroma(
+                persist_directory=persist_directory,
+                embedding_function=embedding_function
+            )
+            print(f"기존 벡터DB 로드됨. 문서 수: {vector_store._collection.count()}")
+            return True
         
         # 새로 생성
         print("새 벡터DB 생성 시도...")
@@ -2054,7 +2032,6 @@ def rag_chatbot():
             if not success:
                 return jsonify({'error': '벡터DB 초기화에 실패했습니다.'}), 500
         
-        # 나머지 코드는 동일...
         load_dotenv()
         api_key = os.getenv("open_api_key")
         
@@ -2089,15 +2066,6 @@ def rag_chatbot():
             ("human", "{question}")
         ])
 
-        # BaseCache와 Callbacks 정의 및 ChatOpenAI 모델 정의
-        from langchain_core.caches import BaseCache
-        from langchain_core.callbacks import Callbacks
-        
-        # BaseCache와 Callbacks를 정의하고 ChatOpenAI 모델 재빌드
-        try:
-            ChatOpenAI.model_rebuild()
-        except:
-            pass
         
         # ChatOpenAI 모델 정의
         model = ChatOpenAI(

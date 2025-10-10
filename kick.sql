@@ -73,6 +73,5 @@ CREATE TABLE manager_info (
     manager_id VARCHAR(255) NOT NULL,
     manager_pw VARCHAR(255) NOT NULL,
     position VARCHAR(50) NOT NULL,
-    create_at DATE DEFAULT (CURRENT_DATE),
     PRIMARY KEY (manager_id)
 );
