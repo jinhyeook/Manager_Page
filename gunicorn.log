@@ -1,0 +1,8 @@
+[2025-10-11 17:23:02 +0900] [191226] [INFO] Starting gunicorn 23.0.0
+[2025-10-11 17:23:02 +0900] [191226] [INFO] Listening at: unix:/home/ubuntu/Manager_Page/Manager_Page.sock (191226)
+[2025-10-11 17:23:02 +0900] [191226] [INFO] Using worker: sync
+[2025-10-11 17:23:02 +0900] [191244] [INFO] Booting worker with pid: 191244
+[2025-10-11 17:23:02 +0900] [191245] [INFO] Booting worker with pid: 191245
+[2025-10-11 17:23:02 +0900] [191246] [INFO] Booting worker with pid: 191246
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given

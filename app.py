@@ -10,7 +10,7 @@ from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableWithMessageHistory
-from langchain.memory import ChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 from dotenv import load_dotenv
 from functools import wraps
 
@@ -2006,7 +2006,7 @@ def get_or_create_memory(session_id):
         session_memories[session_id] = ChatMessageHistory()
     return session_memories[session_id]
 
-# RAG 챗봇 API (rAider 서비스 관련 질문 답변)
+# RAG 챗봇 API (rAider 서비스 관련 질문 답변) - 임시 간단 버전
 @app.route('/api/RAG_Chatbot', methods=['POST'])
 def rag_chatbot():
     try:
@@ -2018,88 +2018,22 @@ def rag_chatbot():
         if not question:
             return jsonify({'error': '질문을 입력해주세요.'}), 400
         
-        # 전역 변수 초기화
-        global vector_store, documents
-        if documents is None:
-            print("문서가 초기화되지 않음. 초기화 시도...")
-            success = initialize_documents()
-            if not success:
-                return jsonify({'error': '문서 초기화에 실패했습니다.'}), 500
+        # 간단한 키워드 기반 응답 (임시 해결책)
+        question_lower = question.lower()
         
-        if vector_store is None:
-            print("벡터DB가 초기화되지 않음. 초기화 시도...")
-            success = initialize_vector_store()
-            if not success:
-                return jsonify({'error': '벡터DB 초기화에 실패했습니다.'}), 500
-        
-        load_dotenv()
-        api_key = os.getenv("open_api_key")
-        
-        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
-        
-        # 프롬프트 템플릿 설정
-        template = """
-            당신은 rAider 킥보드 공유 서비스 전문가입니다. 다음 정보를 바탕으로 사용자의 질문에 답변해주세요.
-
-            컨텍스트: {context}
-            사용자의 질문에 정확하고 도움이 되는 답변을 제공해주세요.
-            답변은 친절하고 구체적으로 작성해주세요.
-            답변을 생성할 때는 예시에 맞게 앱과 관련된 질문만 답변하도록 해주세요.
-            질문이 영어라면 답변을 영어로 변역해 답변해주세요.
-
-            - 예시1
-            사용자 : 5+5는 뭐야?
-            챗봇 : 해당 질문은 rAider 앱과 관련이 없는 질문 입니다. 정확한 질문을 입력해주세요.
-
-            - 예시2
-            사용자 : 김치찌개 레시피 알려줘
-            챗봇 : 해당 질문은 rAider 앱과 관련이 없는 질문 입니다. 정확한 질문을 입력해주세요.
-
-            - 예시3
-            사용자 : rAider 앱은 누가 만든거야?
-            챗봇 : rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 앱입니다.
-        """
-        
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", template),
-            ("placeholder", "{chat_history}"),
-            ("human", "{question}")
-        ])
-
-        
-        # ChatOpenAI 모델 정의
-        model = ChatOpenAI(
-            model_name="gpt-4o-mini", 
-            temperature=0, 
-            openai_api_key=api_key
-        )
-
-        def format_docs(docs):
-            return "\n\n".join(doc.page_content for doc in docs)
-
-        chain = (
-            RunnablePassthrough.assign(
-                context=lambda x: format_docs(retriever.invoke(x["question"]))
-            )
-            | prompt
-            | model
-            | StrOutputParser()
-        )
-
-        # 세션별 메모리 설정 및 챗봇 실행
-        chat_history = get_or_create_memory(session_id)
-        chain_with_memory = RunnableWithMessageHistory(
-            chain,
-            lambda session_id: chat_history,
-            input_messages_key="question",
-            history_messages_key="chat_history",
-        )
-        
-        # 실제 챗봇 실행
-        response = chain_with_memory.invoke(
-            {"question": question},
-            config={"configurable": {"session_id": session_id}}
-        )
+        if 'rAider' in question_lower or 'raider' in question_lower:
+            if '만든' in question_lower or '개발' in question_lower or '제작' in question_lower:
+                response = "rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다."
+            elif '뭐' in question_lower or '무엇' in question_lower:
+                response = "rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다."
+            else:
+                response = "rAider에 대한 질문이군요. 더 구체적인 질문을 해주시면 도움을 드릴 수 있습니다."
+        elif '킥보드' in question_lower:
+            response = "rAider는 킥보드 공유 서비스를 제공하는 앱입니다. 킥보드를 빌려주거나 빌려서 이용할 수 있습니다."
+        elif '앱' in question_lower:
+            response = "rAider 앱에 대한 질문이군요. 구체적으로 어떤 부분에 대해 알고 싶으신지 말씀해주세요."
+        else:
+            response = "해당 질문은 rAider 앱과 관련이 없는 질문입니다. rAider 앱에 대한 질문을 입력해주세요."
         
         return jsonify({
             'success': True,

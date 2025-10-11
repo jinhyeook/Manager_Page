@@ -191,7 +191,14 @@ function initMap() {
 }
 
 function loadDevices() {
-    $.get('/api/web/devices', function(devices) {
+    // 지도에서는 모든 디바이스를 표시하기 위해 큰 per_page 값 사용
+    $.get('/api/web/devices', { per_page: 1000 }, function(response) {
+        console.log('API에서 받은 응답:', response);
+        
+        // 페이징 정보가 포함된 응답에서 devices 배열 추출
+        const devices = response.devices || response;
+        console.log('디바이스 목록:', devices);
+        
         // 기존 마커 제거
         markers.forEach(marker => map.removeLayer(marker));
         markers = [];
@@ -199,12 +206,18 @@ function loadDevices() {
         // 위치별로 기기들을 그룹화 (소수점 4자리 기준)
         const deviceGroups = {};
         devices.forEach(device => {
-            const key = `${device.latitude.toFixed(4)}_${device.longitude.toFixed(4)}`;
-            if (!deviceGroups[key]) {
-                deviceGroups[key] = [];
+            if (device.latitude && device.longitude) {
+                const key = `${device.latitude.toFixed(4)}_${device.longitude.toFixed(4)}`;
+                if (!deviceGroups[key]) {
+                    deviceGroups[key] = [];
+                }
+                deviceGroups[key].push(device);
+            } else {
+                console.warn('위치 정보가 없는 디바이스:', device.device_id);
             }
-            deviceGroups[key].push(device);
         });
+        
+        console.log('그룹화된 디바이스:', deviceGroups);
         
         // 그룹별로 마커 생성
         Object.keys(deviceGroups).forEach(key => {
@@ -279,6 +292,11 @@ function loadDevices() {
             marker.setIcon(icon);
             markers.push(marker);
         });
+        
+        console.log(`총 ${markers.length}개의 마커가 생성되었습니다.`);
+    }).fail(function(xhr, status, error) {
+        console.error('디바이스 목록 로드 실패:', error);
+        console.error('응답:', xhr.responseText);
     });
 }
 
