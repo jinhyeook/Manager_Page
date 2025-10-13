@@ -6,3 +6,2188 @@
 [2025-10-11 17:23:02 +0900] [191246] [INFO] Booting worker with pid: 191246
 Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
 Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+=== 챗봇 상태 확인 ===
+벡터DB 상태: True
+문서 상태: True
+인증 요청: name=홍길순, driver_license=21-19-174133-01, ssn=000829-2134567, user_id=user_c3b5daed
+DB 조회 결과: {'USER_ID': 'user_c3b5daed', 'name': '홍길순', 'driver_license_number': '21-19-174133-01', 'personal_number': '000829-2134567'}
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760356245284,
+  "images": [
+    {
+      "uid": "5eee76344460491fad6a9ff41961e742",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 206.0,
+                "y": 57.0
+              },
+              {
+                "x": 279.0,
+                "y": 57.0
+              },
+              {
+                "x": 279.0,
+                "y": 85.0
+              },
+              {
+                "x": 206.0,
+                "y": 85.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 206.0,
+                    "y": 57.0
+                  },
+                  {
+                    "x": 279.0,
+                    "y": 57.0
+                  },
+                  {
+                    "x": 279.0,
+                    "y": 85.0
+                  },
+                  {
+                    "x": 206.0,
+                    "y": 85.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 179.23045,
+                "y": 82.812775
+              },
+              {
+                "x": 240.64098,
+                "y": 82.515335
+              },
+              {
+                "x": 244.15366,
+                "y": 105.89424
+              },
+              {
+                "x": 181.90593,
+                "y": 105.96593
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 207.0,
+                "y": 113.0
+              },
+              {
+                "x": 367.0,
+                "y": 113.0
+              },
+              {
+                "x": 367.0,
+                "y": 139.0
+              },
+              {
+                "x": 207.0,
+                "y": 139.0
+              }
+            ]
+          },
+          "inferText": "서울시 서대문구",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 207.0,
+                    "y": 113.0
+                  },
+                  {
+                    "x": 367.0,
+                    "y": 113.0
+                  },
+                  {
+                    "x": 367.0,
+                    "y": 139.0
+                  },
+                  {
+                    "x": 207.0,
+                    "y": 139.0
+                  }
+                ]
+              },
+              "inferText": "서울시 서대문구",
+              "inferConfidence": 1.0,
+              "lineBreak": false
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 199.18579,
+                "y": 284.1967
+              },
+              {
+                "x": 309.36093,
+                "y": 287.19113
+              },
+              {
+                "x": 314.83972,
+                "y": 319.52054
+              },
+              {
+                "x": 202.79745,
+                "y": 315.91266
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 207.0,
+              "y": 17.0
+            },
+            {
+              "x": 491.0,
+              "y": 16.0
+            },
+            {
+              "x": 491.0,
+              "y": 52.0
+            },
+            {
+              "x": 207.0,
+              "y": 52.0
+            }
+          ]
+        },
+        "inferText": "21-19-174133-01",
+        "inferConfidence": 0.997,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 207.0,
+                  "y": 17.0
+                },
+                {
+                  "x": 491.0,
+                  "y": 16.0
+                },
+                {
+                  "x": 491.0,
+                  "y": 52.0
+                },
+                {
+                  "x": 207.0,
+                  "y": 52.0
+                }
+              ]
+            },
+            "inferText": "21-19-174133-01",
+            "inferConfidence": 0.997,
+            "lineBreak": true
+          }
+        ]
+      }
+    }
+  ]
+}
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760356305524,
+  "images": [
+    {
+      "uid": "6ce78a3ad3ad421180a535af324deb80",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 177.0,
+                "y": 27.0
+              },
+              {
+                "x": 435.0,
+                "y": 24.0
+              },
+              {
+                "x": 435.0,
+                "y": 57.0
+              },
+              {
+                "x": 177.0,
+                "y": 59.0
+              }
+            ]
+          },
+          "inferText": "21-19-174133-01",
+          "inferConfidence": 0.9962,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 177.0,
+                    "y": 27.0
+                  },
+                  {
+                    "x": 435.0,
+                    "y": 24.0
+                  },
+                  {
+                    "x": 435.0,
+                    "y": 57.0
+                  },
+                  {
+                    "x": 177.0,
+                    "y": 59.0
+                  }
+                ]
+              },
+              "inferText": "21-19-174133-01",
+              "inferConfidence": 0.9962,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 176.0,
+                "y": 62.0
+              },
+              {
+                "x": 243.0,
+                "y": 62.0
+              },
+              {
+                "x": 243.0,
+                "y": 89.0
+              },
+              {
+                "x": 176.0,
+                "y": 89.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 0.9999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 176.0,
+                    "y": 62.0
+                  },
+                  {
+                    "x": 243.0,
+                    "y": 62.0
+                  },
+                  {
+                    "x": 243.0,
+                    "y": 89.0
+                  },
+                  {
+                    "x": 176.0,
+                    "y": 89.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 0.9999,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 173.0,
+                "y": 87.0
+              },
+              {
+                "x": 345.0,
+                "y": 84.0
+              },
+              {
+                "x": 346.0,
+                "y": 111.0
+              },
+              {
+                "x": 174.0,
+                "y": 114.0
+              }
+            ]
+          },
+          "inferText": "000829-2134567",
+          "inferConfidence": 0.9993,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 173.0,
+                    "y": 87.0
+                  },
+                  {
+                    "x": 345.0,
+                    "y": 84.0
+                  },
+                  {
+                    "x": 346.0,
+                    "y": 111.0
+                  },
+                  {
+                    "x": 174.0,
+                    "y": 114.0
+                  }
+                ]
+              },
+              "inferText": "000829-2134567",
+              "inferConfidence": 0.9993,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 164.0,
+                "y": 292.0
+              },
+              {
+                "x": 280.0,
+                "y": 292.0
+              },
+              {
+                "x": 280.0,
+                "y": 314.0
+              },
+              {
+                "x": 164.0,
+                "y": 314.0
+              }
+            ]
+          },
+          "inferText": "2019.09. 10.",
+          "inferConfidence": 0.99765,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 164.0,
+                    "y": 292.0
+                  },
+                  {
+                    "x": 251.0,
+                    "y": 292.0
+                  },
+                  {
+                    "x": 251.0,
+                    "y": 314.0
+                  },
+                  {
+                    "x": 164.0,
+                    "y": 314.0
+                  }
+                ]
+              },
+              "inferText": "2019.09.",
+              "inferConfidence": 0.9975,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 249.0,
+                    "y": 292.0
+                  },
+                  {
+                    "x": 280.0,
+                    "y": 292.0
+                  },
+                  {
+                    "x": 280.0,
+                    "y": 313.0
+                  },
+                  {
+                    "x": 249.0,
+                    "y": 313.0
+                  }
+                ]
+              },
+              "inferText": "10.",
+              "inferConfidence": 0.9978,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 210.0,
+              "y": 0.0
+            },
+            {
+              "x": 354.0,
+              "y": 0.0
+            },
+            {
+              "x": 354.0,
+              "y": 23.0
+            },
+            {
+              "x": 210.0,
+              "y": 23.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9986,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 210.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 354.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 354.0,
+                  "y": 23.0
+                },
+                {
+                  "x": 210.0,
+                  "y": 23.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9986,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321895, lng=126.8065957
+시간: 2025-10-13 20:53:26
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.1% (5초당 1%)
+배터리 소모: 2.1% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:53:26
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321609, lng=126.8065493
+시간: 2025-10-13 20:53:36
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.1% (5초당 1%)
+[2025-10-13 21:12:49 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:12:49 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:12:49 +0900] [202811] [INFO] Booting worker with pid: 202811
+[2025-10-13 21:12:49 +0900] [202814] [INFO] Booting worker with pid: 202814
+[2025-10-13 21:12:49 +0900] [191244] [INFO] Worker exiting (pid: 191244)
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760356253368,
+  "images": [
+    {
+      "uid": "5099cba032de4ad7b27c79330102a556",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 221.0,
+                "y": 26.0
+              },
+              {
+                "x": 489.0,
+                "y": 21.0
+              },
+              {
+                "x": 490.0,
+                "y": 54.0
+              },
+              {
+                "x": 222.0,
+                "y": 59.0
+              }
+            ]
+          },
+          "inferText": "21-19-174133-01",
+          "inferConfidence": 0.9963,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 221.0,
+                    "y": 26.0
+                  },
+                  {
+                    "x": 489.0,
+                    "y": 21.0
+                  },
+                  {
+                    "x": 490.0,
+                    "y": 54.0
+                  },
+                  {
+                    "x": 222.0,
+                    "y": 59.0
+                  }
+                ]
+              },
+              "inferText": "21-19-174133-01",
+              "inferConfidence": 0.9963,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 220.0,
+                "y": 63.0
+              },
+              {
+                "x": 290.0,
+                "y": 63.0
+              },
+              {
+                "x": 290.0,
+                "y": 90.0
+              },
+              {
+                "x": 221.0,
+                "y": 91.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 220.0,
+                    "y": 63.0
+                  },
+                  {
+                    "x": 290.0,
+                    "y": 63.0
+                  },
+                  {
+                    "x": 290.0,
+                    "y": 90.0
+                  },
+                  {
+                    "x": 221.0,
+                    "y": 91.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 219.0,
+                "y": 88.0
+              },
+              {
+                "x": 396.0,
+                "y": 84.0
+              },
+              {
+                "x": 396.0,
+                "y": 111.0
+              },
+              {
+                "x": 219.0,
+                "y": 116.0
+              }
+            ]
+          },
+          "inferText": "000829-2134567",
+          "inferConfidence": 0.9966,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 219.0,
+                    "y": 88.0
+                  },
+                  {
+                    "x": 396.0,
+                    "y": 84.0
+                  },
+                  {
+                    "x": 396.0,
+                    "y": 111.0
+                  },
+                  {
+                    "x": 219.0,
+                    "y": 116.0
+                  }
+                ]
+              },
+              "inferText": "000829-2134567",
+              "inferConfidence": 0.9966,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 217.53598,
+                "y": 284.42905
+              },
+              {
+                "x": 320.0009,
+                "y": 287.87637
+              },
+              {
+                "x": 319.20288,
+                "y": 323.0918
+              },
+              {
+                "x": 215.34525,
+                "y": 318.6566
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 255.0,
+              "y": 0.0
+            },
+            {
+              "x": 403.0,
+              "y": 0.0
+            },
+            {
+              "x": 403.0,
+              "y": 21.0
+            },
+            {
+              "x": 255.0,
+              "y": 21.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9906,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 255.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 403.0,
+                  "y": 0.0
+                },
+                {
+                  "x": 403.0,
+                  "y": 21.0
+                },
+                {
+                  "x": 255.0,
+                  "y": 21.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9906,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321803, lng=126.8066049
+시간: 2025-10-13 20:53:06
+실시간 로그 저장 완료: 2025-10-13 20:53:06
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321903, lng=126.8065953
+시간: 2025-10-13 20:53:16
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.1% (5초당 1%)
+배터리 소모: 2.1% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:53:16
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321665, lng=126.8065758
+시간: 2025-10-13 20:54:19
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.5% (5초당 1%)
+배터리 소모: 2.5% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:54:19
+[2025-10-13 21:12:49 +0900] [191246] [INFO] Worker exiting (pid: 191246)
+배터리 소모: 2.1% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:53:36
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321686, lng=126.8065754
+시간: 2025-10-13 20:53:46
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.1% (5초당 1%)
+배터리 소모: 2.1% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:53:46
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321667, lng=126.8065432
+시간: 2025-10-13 20:53:56
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.1% (5초당 1%)
+배터리 소모: 2.1% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:53:56
+대여 종료 요청 받음: user_id=user_c3b5daed, device_code=0250928015
+요청 데이터: {'user_id': 'user_c3b5daed', 'device_code': '0250928015', 'end_latitude': 37.3321665, 'end_longitude': 126.8065758}
+종료 위치: lat=37.3321665, lng=126.8065758
+대여 기록 찾음: start_time=2025-10-13 20:52:51
+사용 시간: 1분 26초
+계산된 요금: 900원
+device_realtime_log 마지막 위치 사용: lat=37.3321617, lng=126.80654930000001
+시작 위치: lat=37.3321947, lng=126.806503
+종료 위치: lat=37.3321617, lng=126.80654930000001
+거리 계산 입력: lat1=37.3321947, lon1=126.806503, lat2=37.3321617, lon2=126.80654930000001
+라디안 변환: lat1_rad=0.651570, lon1_rad=2.213191, lat2_rad=0.651569, lon2_rad=2.213192
+차이: dlat=-0.000001, dlon=0.000001
+중간값: a=0.000000
+중간값: c=0.000001
+거리 계산 결과: 0.005497km
+이동 거리: 0.01km
+device_use_log 테이블 업데이트 시도...
+device_use_log 업데이트 결과: 1개 행이 업데이트됨
+기기 상태 업데이트 시도: device_code=0250928015
+업데이트 전 device_info.location: {'lng': 37.3321947, 'lat': 126.806503}
+기기 상태 업데이트 결과: 1개 행이 업데이트됨
+업데이트 후 device_info.location: {'lng': 37.3321617, 'lat': 126.80654930000001}
+device_use_log.end_loc: {'lng': 37.3321617, 'lat': 126.80654930000001}
+성공: device_code '0250928015'의 is_used가 0으로 업데이트되었습니다.
+데이터베이스 커밋 완료
+[2025-10-13 21:12:49 +0900] [191245] [INFO] Worker exiting (pid: 191245)
+로그인 시도: manager_id=jin123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'jin123', 'manager_pw': 'jin123', 'position': '김진혁'}
+비밀번호 검증: 입력=jing123, 저장된 비밀번호=jin123
+비밀번호 불일치
+로그인 시도: manager_id=jin123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'jin123', 'manager_pw': 'jin123', 'position': '김진혁'}
+비밀번호 검증: 입력=jin123, 저장된 비밀번호=jin123
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760356055073,
+  "images": [
+    {
+      "uid": "17ebc6d414b44319b32e8421dbbd9740",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 220.0,
+                "y": 49.0
+              },
+              {
+                "x": 489.0,
+                "y": 49.0
+              },
+              {
+                "x": 489.0,
+                "y": 82.0
+              },
+              {
+                "x": 220.0,
+                "y": 82.0
+              }
+            ]
+          },
+          "inferText": "21-19-174133-01",
+          "inferConfidence": 0.997,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 220.0,
+                    "y": 49.0
+                  },
+                  {
+                    "x": 489.0,
+                    "y": 49.0
+                  },
+                  {
+                    "x": 489.0,
+                    "y": 82.0
+                  },
+                  {
+                    "x": 220.0,
+                    "y": 82.0
+                  }
+                ]
+              },
+              "inferText": "21-19-174133-01",
+              "inferConfidence": 0.997,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 218.0,
+                "y": 86.0
+              },
+              {
+                "x": 289.0,
+                "y": 86.0
+              },
+              {
+                "x": 289.0,
+                "y": 114.0
+              },
+              {
+                "x": 218.0,
+                "y": 114.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 218.0,
+                    "y": 86.0
+                  },
+                  {
+                    "x": 289.0,
+                    "y": 86.0
+                  },
+                  {
+                    "x": 289.0,
+                    "y": 114.0
+                  },
+                  {
+                    "x": 218.0,
+                    "y": 114.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 216.0,
+                "y": 111.0
+              },
+              {
+                "x": 395.0,
+                "y": 108.0
+              },
+              {
+                "x": 395.0,
+                "y": 137.0
+              },
+              {
+                "x": 216.0,
+                "y": 140.0
+              }
+            ]
+          },
+          "inferText": "000829-2134567",
+          "inferConfidence": 0.9993,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 216.0,
+                    "y": 111.0
+                  },
+                  {
+                    "x": 395.0,
+                    "y": 108.0
+                  },
+                  {
+                    "x": 395.0,
+                    "y": 137.0
+                  },
+                  {
+                    "x": 216.0,
+                    "y": 140.0
+                  }
+                ]
+              },
+              "inferText": "000829-2134567",
+              "inferConfidence": 0.9993,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 213.82915,
+                "y": 300.65036
+              },
+              {
+                "x": 309.66714,
+                "y": 310.59598
+              },
+              {
+                "x": 307.72992,
+                "y": 343.78598
+              },
+              {
+                "x": 211.43068,
+                "y": 332.99493
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 256.0,
+              "y": 17.0
+            },
+            {
+              "x": 406.0,
+              "y": 17.0
+            },
+            {
+              "x": 406.0,
+              "y": 45.0
+            },
+            {
+              "x": 256.0,
+              "y": 45.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9997,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 256.0,
+                  "y": 17.0
+                },
+                {
+                  "x": 406.0,
+                  "y": 17.0
+                },
+                {
+                  "x": 406.0,
+                  "y": 45.0
+                },
+                {
+                  "x": 256.0,
+                  "y": 45.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9997,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=홍길순, driver_license=21-19-174133-01, ssn=000829-2134567, user_id=user_c3b5daed
+DB 조회 결과: {'USER_ID': 'user_c3b5daed', 'name': '홍길순', 'driver_license_number': '21-19-174133-01', 'personal_number': '000829-2134567'}
+실시간 로그 수신: user_id=user_c3b5daed, device_code=0250928015
+위치: lat=37.3321617, lng=126.8065493
+시간: 2025-10-13 20:54:07
+배터리 소모 계산: 0250928015 - 시간: 0.2분
+소모량: 시간 2.3% (5초당 1%)
+배터리 소모: 2.3% (시간: 0.2분)
+실시간 로그 저장 완료: 2025-10-13 20:54:07
+[2025-10-13 21:12:49 +0900] [202818] [INFO] Booting worker with pid: 202818
+[2025-10-13 21:12:50 +0900] [191226] [ERROR] Worker (pid:191245) was sent SIGTERM!
+[2025-10-13 21:12:50 +0900] [191226] [ERROR] Worker (pid:191246) was sent SIGTERM!
+[2025-10-13 21:12:50 +0900] [191226] [ERROR] Worker (pid:191244) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+[2025-10-13 21:45:34 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:45:34 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:45:34 +0900] [213031] [INFO] Booting worker with pid: 213031
+[2025-10-13 21:45:34 +0900] [202818] [INFO] Worker exiting (pid: 202818)
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+[2025-10-13 21:45:34 +0900] [213034] [INFO] Booting worker with pid: 213034
+[2025-10-13 21:45:34 +0900] [202811] [INFO] Worker exiting (pid: 202811)
+[2025-10-13 21:45:34 +0900] [213038] [INFO] Booting worker with pid: 213038
+[2025-10-13 21:45:34 +0900] [202814] [INFO] Worker exiting (pid: 202814)
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+[2025-10-13 21:45:34 +0900] [191226] [ERROR] Worker (pid:202818) was sent SIGTERM!
+[2025-10-13 21:45:34 +0900] [191226] [ERROR] Worker (pid:202811) was sent SIGTERM!
+[2025-10-13 21:45:34 +0900] [191226] [ERROR] Worker (pid:202814) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+[2025-10-13 21:46:08 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:46:08 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:46:08 +0900] [213475] [INFO] Booting worker with pid: 213475
+[2025-10-13 21:46:08 +0900] [213476] [INFO] Booting worker with pid: 213476
+[2025-10-13 21:46:09 +0900] [213034] [INFO] Worker exiting (pid: 213034)
+[2025-10-13 21:46:09 +0900] [213038] [INFO] Worker exiting (pid: 213038)
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+[2025-10-13 21:46:09 +0900] [213480] [INFO] Booting worker with pid: 213480
+[2025-10-13 21:46:09 +0900] [213031] [INFO] Worker exiting (pid: 213031)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_session
+벡터DB 초기화 시도...
+문서가 없어서 벡터DB를 초기화할 수 없음
+벡터DB 초기화 실패, 기본 응답으로 대체
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_session2
+벡터DB 초기화 시도...
+문서가 없어서 벡터DB를 초기화할 수 없음
+벡터DB 초기화 실패, 기본 응답으로 대체
+[2025-10-13 21:46:10 +0900] [191226] [ERROR] Worker (pid:213031) was sent SIGTERM!
+[2025-10-13 21:46:10 +0900] [191226] [ERROR] Worker (pid:213034) was sent SIGTERM!
+[2025-10-13 21:46:10 +0900] [191226] [ERROR] Worker (pid:213038) was sent SIGTERM!
+[2025-10-13 21:46:33 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:46:33 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:46:33 +0900] [213665] [INFO] Booting worker with pid: 213665
+[2025-10-13 21:46:33 +0900] [213668] [INFO] Booting worker with pid: 213668
+[2025-10-13 21:46:33 +0900] [213476] [INFO] Worker exiting (pid: 213476)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_session3
+벡터DB 초기화 시도...
+문서가 없어서 벡터DB를 초기화할 수 없음
+벡터DB 초기화 실패, 기본 응답으로 대체
+[2025-10-13 21:46:33 +0900] [213480] [INFO] Worker exiting (pid: 213480)
+[2025-10-13 21:46:33 +0900] [213475] [INFO] Worker exiting (pid: 213475)
+[2025-10-13 21:46:33 +0900] [213672] [INFO] Booting worker with pid: 213672
+[2025-10-13 21:46:34 +0900] [191226] [ERROR] Worker (pid:213475) was sent SIGTERM!
+[2025-10-13 21:46:34 +0900] [191226] [ERROR] Worker (pid:213476) was sent SIGTERM!
+[2025-10-13 21:46:34 +0900] [191226] [ERROR] Worker (pid:213480) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+/home/ubuntu/Manager_Page/app.py:2123: LangChainDeprecationWarning: The method `BaseRetriever.get_relevant_documents` was deprecated in langchain-core 0.1.46 and will be removed in 1.0. Use :meth:`~invoke` instead.
+  docs = retriever.get_relevant_documents(question)
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Traceback (most recent call last):
+  File "/home/ubuntu/Manager_Page/app.py", line 2134, in rag_chatbot
+    llm = ChatOpenAI(
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/langchain_core/load/serializable.py", line 125, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/pydantic/main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/pydantic/_internal/_mock_val_ser.py", line 100, in __getattr__
+    raise PydanticUserError(self._error_message, code=self._code)
+pydantic.errors.PydanticUserError: `ChatOpenAI` is not fully defined; you should define `BaseCache`, then call `ChatOpenAI.model_rebuild()`.
+
+For further information visit https://errors.pydantic.dev/2.11/u/class-not-fully-defined
+[2025-10-13 21:47:00 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:47:00 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:47:00 +0900] [213937] [INFO] Booting worker with pid: 213937
+[2025-10-13 21:47:00 +0900] [213940] [INFO] Booting worker with pid: 213940
+[2025-10-13 21:47:00 +0900] [213668] [INFO] Worker exiting (pid: 213668)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_session4
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+RAG 챗봇 오류: `ChatOpenAI` is not fully defined; you should define `BaseCache`, then call `ChatOpenAI.model_rebuild()`.
+
+For further information visit https://errors.pydantic.dev/2.11/u/class-not-fully-defined
+[2025-10-13 21:47:00 +0900] [213944] [INFO] Booting worker with pid: 213944
+[2025-10-13 21:47:00 +0900] [213665] [INFO] Worker exiting (pid: 213665)
+[2025-10-13 21:47:00 +0900] [213672] [INFO] Worker exiting (pid: 213672)
+[2025-10-13 21:47:01 +0900] [191226] [ERROR] Worker (pid:213665) was sent SIGTERM!
+[2025-10-13 21:47:01 +0900] [191226] [ERROR] Worker (pid:213672) was sent SIGTERM!
+[2025-10-13 21:47:01 +0900] [191226] [ERROR] Worker (pid:213668) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 21:47:25 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:47:25 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:47:25 +0900] [214194] [INFO] Booting worker with pid: 214194
+[2025-10-13 21:47:25 +0900] [214197] [INFO] Booting worker with pid: 214197
+[2025-10-13 21:47:25 +0900] [214201] [INFO] Booting worker with pid: 214201
+[2025-10-13 21:47:25 +0900] [213937] [INFO] Worker exiting (pid: 213937)
+[2025-10-13 21:47:25 +0900] [213940] [INFO] Worker exiting (pid: 213940)
+[2025-10-13 21:47:25 +0900] [213944] [INFO] Worker exiting (pid: 213944)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_session5
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+ChatOpenAI 초기화 오류: `ChatOpenAI` is not fully defined; you should define `BaseCache`, then call `ChatOpenAI.model_rebuild()`.
+
+For further information visit https://errors.pydantic.dev/2.11/u/class-not-fully-defined
+[2025-10-13 21:47:26 +0900] [191226] [ERROR] Worker (pid:213937) was sent SIGTERM!
+[2025-10-13 21:47:26 +0900] [191226] [ERROR] Worker (pid:213940) was sent SIGTERM!
+[2025-10-13 21:47:26 +0900] [191226] [ERROR] Worker (pid:213944) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 21:48:14 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:48:14 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:48:14 +0900] [214579] [INFO] Booting worker with pid: 214579
+[2025-10-13 21:48:14 +0900] [214582] [INFO] Booting worker with pid: 214582
+[2025-10-13 21:48:14 +0900] [214586] [INFO] Booting worker with pid: 214586
+[2025-10-13 21:48:14 +0900] [214194] [INFO] Worker exiting (pid: 214194)
+[2025-10-13 21:48:14 +0900] [214197] [INFO] Worker exiting (pid: 214197)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱은 누가 만들었나요?
+세션 ID: test_rag_final
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+ChatOpenAI 초기화 오류: name 'Callbacks' is not defined
+
+For further information visit https://errors.pydantic.dev/2.11/u/undefined-annotation
+[2025-10-13 21:48:14 +0900] [214201] [INFO] Worker exiting (pid: 214201)
+[2025-10-13 21:48:15 +0900] [191226] [ERROR] Worker (pid:214194) was sent SIGTERM!
+[2025-10-13 21:48:15 +0900] [191226] [ERROR] Worker (pid:214201) was sent SIGTERM!
+[2025-10-13 21:48:15 +0900] [191226] [ERROR] Worker (pid:214197) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 21:54:48 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:54:48 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:54:48 +0900] [217252] [INFO] Booting worker with pid: 217252
+[2025-10-13 21:54:48 +0900] [214579] [INFO] Worker exiting (pid: 214579)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱은 누가 만들었나요?
+세션 ID: test_rag_final2
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다.
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 이용요금은 어떻게 되나요?
+세션 ID: test_rag_final3
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: 죄송합니다. 현재 문서에 요금 정보가 포함되어 있지 않습니다. 앱 내에서 직접 확인해주세요.
+=== RAG 챗봇 요청 ===
+질문: 앱 제작배경이 뭐야?
+세션 ID: session_1760359186774
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다.
+=== RAG 챗봇 요청 ===
+질문: 앱 기능들 뭐야?
+세션 ID: session_1760359186774
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: 제공된 문서 내용을 바탕으로 답변드리기 어렵습니다. rAider 앱에 대한 구체적인 질문을 해주세요.
+[2025-10-13 21:54:48 +0900] [214586] [INFO] Worker exiting (pid: 214586)
+[2025-10-13 21:54:48 +0900] [217259] [INFO] Booting worker with pid: 217259
+=== 챗봇 상태 확인 ===
+벡터DB 상태: False
+문서 상태: False
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+=== RAG 챗봇 요청 ===
+질문: 앱 제작 기관은 어디야?
+세션 ID: session_1760359186774
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다.
+=== RAG 챗봇 요청 ===
+질문: rAider 앱은 무엇인가요?
+세션 ID: test_log_analysis
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다.
+=== RAG 챗봇 요청 ===
+질문: rAider 앱은 무엇인가요?
+세션 ID: test_log_analysis2
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다.
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 개발자는 누구인가요?
+세션 ID: test_log_analysis3
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다.
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_debug
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: 제공된 문서 내용을 바탕으로 답변드리기 어렵습니다. rAider 앱에 대한 구체적인 질문을 해주세요.
+[2025-10-13 21:54:48 +0900] [214582] [INFO] Worker exiting (pid: 214582)
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T20:52:51', 'end_time': '2025-10-13T20:54:17', 'fee': 900}, {'DEVICE_CODE': '0250928016', 'start_time': '2025-10-11T17:08:57', 'end_time': '2025-10-11T17:12:58', 'fee': 2500}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-11T16:50:39', 'end_time': '2025-10-11T16:57:51', 'fee': 4400}]
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: session_1760359186774
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+생성된 응답: 제공된 문서 내용을 바탕으로 답변드리기 어렵습니다. rAider 앱에 대한 구체적인 질문을 해주세요.
+[2025-10-13 21:54:48 +0900] [217255] [INFO] Booting worker with pid: 217255
+[2025-10-13 21:54:50 +0900] [191226] [ERROR] Worker (pid:214582) was sent SIGTERM!
+[2025-10-13 21:54:50 +0900] [191226] [ERROR] Worker (pid:214586) was sent SIGTERM!
+[2025-10-13 21:54:50 +0900] [191226] [ERROR] Worker (pid:214579) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 21:56:43 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:56:43 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:56:43 +0900] [218140] [INFO] Booting worker with pid: 218140
+[2025-10-13 21:56:43 +0900] [217252] [INFO] Worker exiting (pid: 217252)
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_improved
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+질문 분석: 앱 누가 만들었어?
+컨텍스트 내용: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020.09
+rAider 앱 제작 배경
+최근 공유 개인형 이동장치(킥보드, 자전거 등)의 이용량이 크게 증가하면서 안전사고 또한 함께 늘
+어나고 있습니다. 여러 명이 한 기기에 탑승하거나...
+생성된 응답: rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다.
+=== RAG 챗봇 요청 ===
+질문: 이용요금 얼마야?
+세션 ID: test_fee
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+질문 분석: 이용요금 얼마야?
+컨텍스트 내용: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020.09
+rAider 앱 제작 배경
+최근 공유 개인형 이동장치(킥보드, 자전거 등)의 이용량이 크게 증가하면서 안전사고 또한 함께 늘
+어나고 있습니다. 여러 명이 한 기기에 탑승하거나...
+생성된 응답: 죄송합니다. 현재 문서에 요금 정보가 포함되어 있지 않습니다. 앱 내에서 직접 확인해주세요.
+[2025-10-13 21:56:43 +0900] [217255] [INFO] Worker exiting (pid: 217255)
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_improved2
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+질문 분석: 앱 누가 만들었어?
+컨텍스트 내용: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020.09
+rAider 앱 제작 배경
+최근 공유 개인형 이동장치(킥보드, 자전거 등)의 이용량이 크게 증가하면서 안전사고 또한 함께 늘
+어나고 있습니다. 여러 명이 한 기기에 탑승하거나...
+생성된 응답: rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다.
+=== RAG 챗봇 요청 ===
+질문: rAider 앱이 뭐야?
+세션 ID: test_what
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+문서 기반 응답 생성 중...
+질문 분석: raider 앱이 뭐야?
+컨텍스트 내용: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020.09
+rAider 앱 제작 배경
+최근 공유 개인형 이동장치(킥보드, 자전거 등)의 이용량이 크게 증가하면서 안전사고 또한 함께 늘
+어나고 있습니다. 여러 명이 한 기기에 탑승하거나...
+생성된 응답: rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다.
+[2025-10-13 21:56:43 +0900] [217259] [INFO] Worker exiting (pid: 217259)
+[2025-10-13 21:56:43 +0900] [218141] [INFO] Booting worker with pid: 218141
+[2025-10-13 21:56:43 +0900] [218144] [INFO] Booting worker with pid: 218144
+[2025-10-13 21:56:44 +0900] [191226] [ERROR] Worker (pid:217259) was sent SIGTERM!
+[2025-10-13 21:56:44 +0900] [191226] [ERROR] Worker (pid:217252) was sent SIGTERM!
+[2025-10-13 21:56:44 +0900] [191226] [ERROR] Worker (pid:217255) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 21:59:46 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 21:59:46 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 21:59:47 +0900] [219287] [INFO] Booting worker with pid: 219287
+[2025-10-13 21:59:47 +0900] [219288] [INFO] Booting worker with pid: 219288
+[2025-10-13 21:59:47 +0900] [218140] [INFO] Worker exiting (pid: 218140)
+=== RAG 챗봇 요청 ===
+질문: 이용요금은 얼마인가요?
+세션 ID: test_llm_fee
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: 죄송합니다만, 제공된 문서에 킥보드 이용요금에 대한 정보가 포함되어 있지 않습니다. 이에 대한 자세한 내용은 rAider 앱 내에서 확인하시거나 추가적인 문의를 주시면 좋을 것 같습니다.
+=== 챗봇 상태 확인 ===
+벡터DB 상태: True
+문서 상태: True
+[2025-10-13 21:59:47 +0900] [218141] [INFO] Worker exiting (pid: 218141)
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_llm_rag
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: rAider 앱은 안양대학교 소프트웨어학과에서 제작되었습니다. 제작에 참여한 인원은 총 3명으로, 박소정, 정범진, 김진혁 님들이 참여하였습니다. 제작 기간은 2025년 3월부터 2020년 9월까지였습니다.
+=== RAG 챗봇 요청 ===
+질문: 앱 제작기관이 어디야?
+세션 ID: session_1760359186774
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: rAider 앱은 안양대학교 소프트웨어학과에서 제작되었습니다.
+[2025-10-13 21:59:47 +0900] [218144] [INFO] Worker exiting (pid: 218144)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱이 뭐야?
+세션 ID: test_llm_what
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: rAider는 개인형 이동장치 대여 서비스를 제공하는 앱입니다. 이 앱의 목표는 단순 대여 서비스뿐만 아니라 이용자의 안전까지도 고려한 서비스를 제공하는 것입니다. 앱의 주요 기능으로는 전방 위험 요소 탐지, 헬멧 착용 여부 판단, 불건전한 이용에 대한 자동 탐지 및 신고 서비스 등이 있습니다.
+[2025-10-13 21:59:47 +0900] [219293] [INFO] Booting worker with pid: 219293
+[2025-10-13 21:59:48 +0900] [191226] [ERROR] Worker (pid:218140) was sent SIGTERM!
+[2025-10-13 21:59:48 +0900] [191226] [ERROR] Worker (pid:218141) was sent SIGTERM!
+[2025-10-13 21:59:48 +0900] [191226] [ERROR] Worker (pid:218144) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 22:08:13 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 22:08:13 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 22:08:13 +0900] [222108] [INFO] Booting worker with pid: 222108
+[2025-10-13 22:08:13 +0900] [222109] [INFO] Booting worker with pid: 222109
+[2025-10-13 22:08:13 +0900] [219287] [INFO] Worker exiting (pid: 219287)
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_clean_llm
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: rAider 앱은 안양대학교 소프트웨어학과의 박소정, 정범진, 김진혁 세 명이 만들었습니다. 제작 기간은 2025년 3월부터 2020년 9월까지였습니다.
+[2025-10-13 22:08:13 +0900] [219293] [INFO] Worker exiting (pid: 219293)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 주요 기능은 뭐야?
+세션 ID: test_clean_features
+문서 초기화 시도...
+=== 문서 초기화 시작 ===
+문서 경로: rAider.pdf
+파일 존재 확인: rAider.pdf
+문서 로드 완료: 1개 페이지
+벡터DB 초기화 시도...
+=== 벡터DB 초기화 시작 ===
+기존 벡터DB 로드 시도...
+기존 벡터DB 로드됨. 문서 수: 1
+RAG 검색 수행 중...
+검색된 문서 수: 1
+문서 1: rAider App
+rAider 개요
+제작 기관 : 안양대학교 소프트웨어학과
+제작 인원 : 3명
+제작 인원 이름 : 박소정, 정범진, 김진혁
+제작 기간 : 2025.03~2020....
+OpenAI GPT로 응답 생성 중...
+OpenAI GPT 응답: rAider 앱의 주요 기능으로는 1) 전방 위험 요소 탐지 서비스, 2) 헬멧 착용 여부 판단 서비스, 3) 불건전한 이용에 대한 자동 탐지 및 신고 서비스가 있습니다. 이를 통해 사용자의 안전을 최우선으로 고려한 스마트한 개인형 이동장치 관리 플랫폼을 제공하고 있습니다.
+[2025-10-13 22:08:13 +0900] [219288] [INFO] Worker exiting (pid: 219288)
+[2025-10-13 22:08:13 +0900] [222113] [INFO] Booting worker with pid: 222113
+[2025-10-13 22:08:14 +0900] [191226] [ERROR] Worker (pid:219288) was sent SIGTERM!
+[2025-10-13 22:08:14 +0900] [191226] [ERROR] Worker (pid:219293) was sent SIGTERM!
+[2025-10-13 22:08:14 +0900] [191226] [ERROR] Worker (pid:219287) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Traceback (most recent call last):
+  File "/home/ubuntu/Manager_Page/app.py", line 2047, in initialize_rag_system
+    model = ChatOpenAI(
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/langchain_core/load/serializable.py", line 125, in __init__
+    super().__init__(*args, **kwargs)
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/pydantic/main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/pydantic/_internal/_mock_val_ser.py", line 100, in __getattr__
+    raise PydanticUserError(self._error_message, code=self._code)
+pydantic.errors.PydanticUserError: `ChatOpenAI` is not fully defined; you should define `BaseCache`, then call `ChatOpenAI.model_rebuild()`.
+
+For further information visit https://errors.pydantic.dev/2.11/u/class-not-fully-defined
+[2025-10-13 22:08:42 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 22:08:42 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 22:08:42 +0900] [222374] [INFO] Booting worker with pid: 222374
+[2025-10-13 22:08:42 +0900] [222375] [INFO] Booting worker with pid: 222375
+[2025-10-13 22:08:42 +0900] [222113] [INFO] Worker exiting (pid: 222113)
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+❌ RAG 시스템 초기화 실패: `ChatOpenAI` is not fully defined; you should define `BaseCache`, then call `ChatOpenAI.model_rebuild()`.
+
+For further information visit https://errors.pydantic.dev/2.11/u/class-not-fully-defined
+[2025-10-13 22:08:42 +0900] [222108] [INFO] Worker exiting (pid: 222108)
+[2025-10-13 22:08:42 +0900] [222109] [INFO] Worker exiting (pid: 222109)
+[2025-10-13 22:08:42 +0900] [222378] [INFO] Booting worker with pid: 222378
+[2025-10-13 22:08:42 +0900] [191226] [ERROR] Worker (pid:222109) was sent SIGTERM!
+[2025-10-13 22:08:42 +0900] [191226] [ERROR] Worker (pid:222108) was sent SIGTERM!
+[2025-10-13 22:08:42 +0900] [191226] [ERROR] Worker (pid:222113) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Traceback (most recent call last):
+  File "/home/ubuntu/Manager_Page/app.py", line 2070, in initialize_rag_system
+    RunnablePassthrough.assign(
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 2962, in __or__
+    coerce_to_runnable(other),
+  File "/home/ubuntu/Manager_Page/venv/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5841, in coerce_to_runnable
+    raise TypeError(msg)
+TypeError: Expected a Runnable, callable or dict.Instead got an unsupported type: <class 'openai.OpenAI'>
+[2025-10-13 22:09:16 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 22:09:16 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 22:09:16 +0900] [222663] [INFO] Booting worker with pid: 222663
+[2025-10-13 22:09:16 +0900] [222666] [INFO] Booting worker with pid: 222666
+[2025-10-13 22:09:16 +0900] [222374] [INFO] Worker exiting (pid: 222374)
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+ChatOpenAI 초기화 오류: name 'Callbacks' is not defined
+
+For further information visit https://errors.pydantic.dev/2.11/u/undefined-annotation
+❌ RAG 시스템 초기화 실패: Expected a Runnable, callable or dict.Instead got an unsupported type: <class 'openai.OpenAI'>
+[2025-10-13 22:09:16 +0900] [222375] [INFO] Worker exiting (pid: 222375)
+[2025-10-13 22:09:16 +0900] [222378] [INFO] Worker exiting (pid: 222378)
+[2025-10-13 22:09:16 +0900] [222670] [INFO] Booting worker with pid: 222670
+[2025-10-13 22:09:17 +0900] [191226] [ERROR] Worker (pid:222374) was sent SIGTERM!
+[2025-10-13 22:09:17 +0900] [191226] [ERROR] Worker (pid:222375) was sent SIGTERM!
+[2025-10-13 22:09:17 +0900] [191226] [ERROR] Worker (pid:222378) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 22:12:08 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 22:12:08 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 22:12:08 +0900] [223801] [INFO] Booting worker with pid: 223801
+[2025-10-13 22:12:08 +0900] [223802] [INFO] Booting worker with pid: 223802
+[2025-10-13 22:12:08 +0900] [222663] [INFO] Worker exiting (pid: 222663)
+[2025-10-13 22:12:08 +0900] [222666] [INFO] Worker exiting (pid: 222666)
+=== RAG 챗봇 요청 ===
+질문: rAider 앱의 주요 기능은 뭐야?
+세션 ID: test_refactored2
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+✅ RAG 시스템 초기화 완료
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱의 주요 기능은 전방 위험 요소 탐지, 헬멧 착용 여부 판단, 그리고 불건전한 이용에 대한 자동 탐지 및 신고 서비스입니다. 사용자의 안전을 최우선으로 고려하여, 안전사고를 예방하고 이용자를 지원하는 다양한 기능을 제공하고 있어요.
+=== RAG 챗봇 요청 ===
+질문: 제작배경이 뭐야?
+세션 ID: session_1760359186774
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱의 제작배경은 최근 개인형 이동장치의 이용량 증가로 인한 안전사고 증가와 이를 악용하는 사례들이 늘어나면서, 안전한 이용을 보장하기 위한 목적으로 만들어졌어요. 사용자의 안전을 최우선으로 고려하여 전방 위험 요소 탐지, 헬멧 착용 여부 판단, 불건전한 이용에 대한 자동 탐지 및 신고 서비스를 제공합니다. 이를 통해 단순한 대여 서비스를 넘어서 안전한 이용을 돕는 스마트한 이동장치 관리 플랫폼을 지향하고 있어요.
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+✅ RAG 시스템 초기화 완료
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+[2025-10-13 22:12:08 +0900] [222670] [INFO] Worker exiting (pid: 222670)
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: test_refactored
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+✅ RAG 시스템 초기화 완료
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱은 안양대학교 소프트웨어학과 학생인 박소정, 정범진, 김진혁 세 명이 제작했습니다. 함께 노력하여 안전한 이용을 위한 다양한 기능을 개발했어요.
+=== RAG 챗봇 요청 ===
+질문: 앱 누가 만들었어?
+세션 ID: session_1760359186774
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱은 안양대학교 소프트웨어학과의 박소정, 정범진, 김진혁 세 명의 학생들이 제작했습니다. 함께 노력하여 안전한 이용을 위한 다양한 기능을 개발했어요.
+[2025-10-13 22:12:08 +0900] [223805] [INFO] Booting worker with pid: 223805
+[2025-10-13 22:12:09 +0900] [191226] [ERROR] Worker (pid:222663) was sent SIGTERM!
+[2025-10-13 22:12:09 +0900] [191226] [ERROR] Worker (pid:222666) was sent SIGTERM!
+[2025-10-13 22:12:09 +0900] [191226] [ERROR] Worker (pid:222670) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+[2025-10-13 22:13:55 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-13 22:13:55 +0900] [191226] [INFO] Hang up: Master
+[2025-10-13 22:13:55 +0900] [224443] [INFO] Booting worker with pid: 224443
+[2025-10-13 22:13:55 +0900] [224444] [INFO] Booting worker with pid: 224444
+[2025-10-13 22:13:55 +0900] [223802] [INFO] Worker exiting (pid: 223802)
+=== RAG 챗봇 요청 ===
+질문: 배고파!
+세션 ID: test_restart
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+✅ RAG 시스템 초기화 완료
+RAG 체인 실행 중...
+RAG 체인 응답: 앱과 관련된 질문이 아닙니다. 배고프시다면 뭘 먹고 싶으세요? 함께 메뉴를 찾아보는 건 어떨까요? 😊🍔🍕🥗
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+[2025-10-13 22:13:55 +0900] [223805] [INFO] Worker exiting (pid: 223805)
+[2025-10-13 22:13:55 +0900] [223801] [INFO] Worker exiting (pid: 223801)
+=== RAG 챗봇 요청 ===
+질문: 배고파
+세션 ID: session_1760359186774
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 1
+기존 벡터DB 로드 중...
+문서의 수: 1
+✅ RAG 시스템 초기화 완료
+RAG 체인 실행 중...
+RAG 체인 응답: 앱과 관련된 질문이 아닙니다. 배고프시다면 뭘 먹고 싶으세요? 함께 메뉴를 찾아보는 건 어떨까요? 😊🍔🍕🥗
+[2025-10-13 22:13:55 +0900] [224445] [INFO] Booting worker with pid: 224445
+[2025-10-13 22:13:56 +0900] [191226] [ERROR] Worker (pid:223801) was sent SIGTERM!
+[2025-10-13 22:13:56 +0900] [191226] [ERROR] Worker (pid:223802) was sent SIGTERM!
+[2025-10-13 22:13:56 +0900] [191226] [ERROR] Worker (pid:223805) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1
+Number of requested results 3 is greater than number of elements in index 1, updating n_results = 1

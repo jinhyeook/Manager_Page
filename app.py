@@ -1204,6 +1204,50 @@ def get_user_info(user_id):
         print(f"사용자 정보 조회 오류: {str(e)}")
         return jsonify({'error': '사용자 정보 조회 중 오류가 발생했습니다.'}), 500
 
+# 디바이스 사용 로그 조회 API
+@app.route('/api/device-logs/<user_id>', methods=['GET'])
+def get_device_logs(user_id):
+    """특정 사용자의 최근 디바이스 사용 로그 조회 API (최신 3개)"""
+    try:
+        print(f"디바이스 로그 조회 요청: user_id = {user_id}")
+        
+        # 사용자의 최근 디바이스 사용 로그 조회 (최신 3개)
+        device_logs_sql = text("""
+            SELECT 
+                DEVICE_CODE,
+                start_time,
+                end_time,
+                fee
+            FROM device_use_log
+            WHERE USER_ID = :user_id
+            ORDER BY start_time DESC
+            LIMIT 3
+        """)
+        
+        logs = db.session.execute(device_logs_sql, {'user_id': user_id}).mappings().all()
+        print(f"조회된 로그 개수: {len(logs)}")
+        
+        # 결과를 리스트로 변환
+        device_logs = []
+        for log in logs:
+            device_logs.append({
+                'DEVICE_CODE': log['DEVICE_CODE'],
+                'start_time': log['start_time'].isoformat() if log['start_time'] else None,
+                'end_time': log['end_time'].isoformat() if log['end_time'] else None,
+                'fee': int(log['fee']) if log['fee'] else 0
+            })
+        
+        print(f"반환할 디바이스 로그: {device_logs}")
+        
+        # 디바이스 로그 반환
+        return jsonify({
+            'device_logs': device_logs
+        }), 200
+        
+    except Exception as e:
+        print(f"디바이스 로그 조회 오류: {str(e)}")
+        return jsonify({'error': '디바이스 로그 조회 중 오류가 발생했습니다.'}), 500
+
 # 사용자 정보 업데이트 API
 @app.route('/api/user-info/<user_id>', methods=['PUT'])
 def update_user_info(user_id):
@@ -1913,46 +1957,23 @@ def find_closest_user(reporter_lat, reporter_lng, report_time, reporter_user_id)
 
 ########################################################### 챗봇을 위한 엔드포인트
 vector_store = None
-documents = None
+rag_chain = None
 session_memories = {}
 
-# 문서 초기화 함수 (PDF 로드)
-def initialize_documents():
-    global documents
-    try:
-        print("=== 문서 초기화 시작 ===")
-        url = r"rAider.pdf"
-        print(f"문서 경로: {url}")
-        
-        # 파일 존재 확인
-        if not os.path.exists(url):
-            print(f" 파일이 존재하지 않습니다: {url}")
-            return False
-            
-        print(f"파일 존재 확인: {url}")
-        
-        loader = PyPDFLoader(url)
-        documents = loader.load()
-        print(f"문서 로드 완료: {len(documents)}개 페이지")
-        
-        return True
-    except Exception as e:
-        print(f"문서 초기화 실패: {str(e)}")
-        return False
+# 텔레메트리 비활성화
+def disable_telemetry():
+    """텔레메트리 비활성화"""
+    os.environ["ANONYMIZED_TELEMETRY"] = "False"
+    os.environ["CHROMA_TELEMETRY"] = "False"
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    os.environ["LANGCHAIN_ENDPOINT"] = ""
 
-# 벡터DB 초기화 함수 (Chroma 벡터 스토어 생성)
-def initialize_vector_store():
-    global vector_store, documents
-    
-    if vector_store is not None:
-        print("벡터DB가 이미 초기화됨")
-        return True
-    
-    if documents is None:
-        print("문서가 없어서 벡터DB를 초기화할 수 없음")
-        return False
+# 문서 로드 및 벡터DB 초기화
+def initialize_rag_system():
+    global vector_store, rag_chain
     
     try:
+        disable_telemetry()
         load_dotenv()
         api_key = os.getenv("open_api_key")
         
@@ -1960,53 +1981,126 @@ def initialize_vector_store():
             print("OpenAI API 키가 설정되지 않음")
             return False
         
-        print("=== 벡터DB 초기화 시작 ===")
+        print("=== RAG 시스템 초기화 시작 ===")
         
-        # 벡터DB가 이미 존재하는지 확인
-        persist_directory = r"VectorDB"
-        embedding_function = OpenAIEmbeddings(api_key=api_key)
+        # 1) 문서 로드 및 텍스트 분할
+        url = r"rAider.pdf"
+        if not os.path.exists(url):
+            print(f"파일이 존재하지 않습니다: {url}")
+            return False
         
-        if os.path.exists(persist_directory) and os.listdir(persist_directory):
-            print("기존 벡터DB 로드 시도...")
-            # 기존 벡터DB 로드
-            vector_store = Chroma(
-                persist_directory=persist_directory,
-                embedding_function=embedding_function
-            )
-            print(f"기존 벡터DB 로드됨. 문서 수: {vector_store._collection.count()}")
-            return True
+        print(f"문서 로드 중: {url}")
+        loader = PyPDFLoader(url)
+        documents = loader.load()
         
-        # 새로 생성
-        print("새 벡터DB 생성 시도...")
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, 
             chunk_overlap=200
         )
         chunks = text_splitter.split_documents(documents)
-        print(f"✅ 청크 생성 완료: {len(chunks)}개")
+        print(f"분할된 청크 수: {len(chunks)}")
         
-        vector_store = Chroma.from_documents(
-            documents=chunks,
-            embedding=embedding_function,
-            persist_directory=persist_directory,
-        )
-        print(f"✅ 새 벡터DB 생성됨. 문서 수: {vector_store._collection.count()}")
+        # 2) 임베딩 생성과 DB 적재
+        embedding_function = OpenAIEmbeddings(api_key=api_key)
+        persist_directory = r"VectorDB"
+        
+        if os.path.exists(persist_directory) and os.listdir(persist_directory):
+            print("기존 벡터DB 로드 중...")
+            vector_store = Chroma(
+                persist_directory=persist_directory,
+                embedding_function=embedding_function
+            )
+        else:
+            print("새 벡터DB 생성 중...")
+            vector_store = Chroma.from_documents(
+                documents=chunks,
+                embedding=embedding_function,
+                persist_directory=persist_directory,
+            )
+        
+        print(f"문서의 수: {vector_store._collection.count()}")
+        
+        # 3) 검색기 생성 (상위 3개 결과)
+        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        
+        # 4) 프롬프트 템플릿 설정
+        template = """당신은 rAider 킥보드 공유 서비스의 고객 지원 챗봇입니다. 
+다음 정보를 바탕으로 사용자의 질문에 답변해주세요.
+
+컨텍스트: {context}
+
+답변 가이드라인:
+1. 제공된 문서 내용을 우선적으로 참고하여 답변하세요.
+2. 문서에 없는 정보는 추측하지 말고 "문서에 해당 정보가 없습니다"라고 말하세요.
+3. 친근하고 도움이 되는 톤으로 답변하세요.
+4. 한국어 질문은 한국어로 대답하고, 영어 질문은 영어로 대답하세요.
+5. 답변은 200자 이내로 간결하게 작성하세요.
+6. 앱과 관련되지 않은 질문에 대해서는 "앱과 관련된 질문이 아닙니다."라고 말하세요. "앱과 관련된 질문이 아닙니다."외에 말을 덧붙이지 마세요.
+
+예시 1)
+질문: 앱 누가 만들었어?
+답변: rAider 앱은 안양대학교 소프트웨어학과에서 제작되었습니다. 제작에 참여한 인원은 총 3명으로, 박소정, 정범진, 김진혁 님들이 참여하였습니다. 제작 기간은 2025년 3월부터 2020년 9월까지였습니다.
+
+예시 2)
+질문 : 배고파!
+답변 : 앱과 관련된 질문이 아닙니다.
+
+
+"""
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", template),
+            ("placeholder", "{chat_history}"),
+            ("human", "{question}")
+        ])
+        
+        # 5) 문서 포맷팅 함수
+        def format_docs(docs):
+            return "\n\n".join(doc.page_content for doc in docs)
+        
+        # 6) RAG 체인 구성 (간단한 구조)
+        def rag_chain_func(input_data):
+            question = input_data["question"]
+            
+            # 문서 검색
+            docs = retriever.invoke(question)
+            context = format_docs(docs)
+            
+            # OpenAI API 호출
+            import openai
+            client = openai.OpenAI(api_key=api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": template.format(context=context)},
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=500,
+                temperature=0
+            )
+            
+            return response.choices[0].message.content.strip()
+        
+        rag_chain = rag_chain_func
+        
+        print("✅ RAG 시스템 초기화 완료")
         return True
         
     except Exception as e:
-        print(f"❌ 벡터DB 초기화 실패: {e}")
+        print(f"❌ RAG 시스템 초기화 실패: {e}")
         import traceback
         traceback.print_exc()
         return False
 
-# 세션별 메모리 관리 함수 (챗봇 대화 기록)
+# 세션별 메모리 관리 함수
 def get_or_create_memory(session_id):
     """세션별 메모리 생성 또는 가져오기"""
     if session_id not in session_memories:
         session_memories[session_id] = ChatMessageHistory()
     return session_memories[session_id]
 
-# RAG 챗봇 API (rAider 서비스 관련 질문 답변) - 임시 간단 버전
+# RAG 챗봇 API (rAider 서비스 관련 질문 답변)
 @app.route('/api/RAG_Chatbot', methods=['POST'])
 def rag_chatbot():
     try:
@@ -2018,81 +2112,83 @@ def rag_chatbot():
         if not question:
             return jsonify({'error': '질문을 입력해주세요.'}), 400
         
-        # 간단한 키워드 기반 응답 (임시 해결책)
-        question_lower = question.lower()
+        print(f"=== RAG 챗봇 요청 ===")
+        print(f"질문: {question}")
+        print(f"세션 ID: {session_id}")
         
-        if 'rAider' in question_lower or 'raider' in question_lower:
-            if '만든' in question_lower or '개발' in question_lower or '제작' in question_lower:
-                response = "rAider 앱은 안양대학교 소프트웨어학과 소속 학생 박소정, 정범진, 김진혁이 만든 킥보드 공유 서비스 앱입니다."
-            elif '뭐' in question_lower or '무엇' in question_lower:
-                response = "rAider는 킥보드 공유 서비스 앱입니다. 사용자들이 킥보드를 공유하고 이용할 수 있는 플랫폼을 제공합니다."
-            else:
-                response = "rAider에 대한 질문이군요. 더 구체적인 질문을 해주시면 도움을 드릴 수 있습니다."
-        elif '킥보드' in question_lower:
-            response = "rAider는 킥보드 공유 서비스를 제공하는 앱입니다. 킥보드를 빌려주거나 빌려서 이용할 수 있습니다."
-        elif '앱' in question_lower:
-            response = "rAider 앱에 대한 질문이군요. 구체적으로 어떤 부분에 대해 알고 싶으신지 말씀해주세요."
-        else:
-            response = "해당 질문은 rAider 앱과 관련이 없는 질문입니다. rAider 앱에 대한 질문을 입력해주세요."
+        # RAG 시스템 초기화 확인
+        global rag_chain, vector_store
+        
+        if rag_chain is None:
+            print("RAG 시스템 초기화 시도...")
+            if not initialize_rag_system():
+                print("RAG 시스템 초기화 실패")
+                return jsonify({
+                    'success': True,
+                    'response': "죄송합니다. 현재 시스템을 초기화 중입니다. 잠시 후 다시 시도해주세요.",
+                    'session_id': session_id
+                }), 200
+        
+        print("RAG 체인 실행 중...")
+        
+        # RAG 체인 실행
+        response = rag_chain({"question": question})
+        
+        print(f"RAG 체인 응답: {response}")
         
         return jsonify({
             'success': True,
             'response': response,
-            'session_id': session_id
+            'session_id': session_id,
+            'sources': 3  # 상위 3개 문서 사용
         }), 200
         
     except Exception as e:
         print(f"RAG 챗봇 오류: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'error': '챗봇 처리 중 오류가 발생했습니다.'}), 500
+        
+        # 오류 발생 시 기본 응답
+        return jsonify({
+            'success': True,
+            'response': "죄송합니다. 현재 시스템에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
+            'session_id': session_id
+        }), 200
         
 # 챗봇 상태 확인 API (벡터DB 및 문서 상태 체크)
 @app.route('/api/RAG_Chatbot/status', methods=['GET'])
 def get_chatbot_status():
     """챗봇 상태 확인 API"""
     try:
-        global vector_store, documents
+        global rag_chain, vector_store
         
         print(f"=== 챗봇 상태 확인 ===")
+        print(f"RAG 체인 상태: {rag_chain is not None}")
         print(f"벡터DB 상태: {vector_store is not None}")
-        print(f"문서 상태: {documents is not None}")
         
-        # 문서가 없으면 초기화 시도
-        if documents is None:
-            print("문서 초기화 시도...")
-            success = initialize_documents()
+        # RAG 시스템이 없으면 초기화 시도
+        if rag_chain is None:
+            print("RAG 시스템 초기화 시도...")
+            success = initialize_rag_system()
             if not success:
                 return jsonify({
-                    'status': 'document_error',
-                    'message': '문서 초기화에 실패했습니다.',
+                    'status': 'rag_system_error',
+                    'message': 'RAG 시스템 초기화에 실패했습니다.',
                     'debug_info': {
-                        'vector_store_exists': vector_store is not None,
-                        'documents_exist': documents is not None
+                        'rag_chain_exists': rag_chain is not None,
+                        'vector_store_exists': vector_store is not None
                     }
                 }), 200
         
-        # 벡터DB가 없으면 초기화 시도
-        if vector_store is None:
-            print("벡터DB 초기화 시도...")
-            success = initialize_vector_store()
-            if not success:
-                return jsonify({
-                    'status': 'vector_db_error',
-                    'message': '벡터DB 초기화에 실패했습니다.',
-                    'debug_info': {
-                        'vector_store_exists': vector_store is not None,
-                        'documents_exist': documents is not None
-                    }
-                }), 200
-        
-        doc_count = vector_store._collection.count()
+        doc_count = vector_store._collection.count() if vector_store else 0
         session_count = len(session_memories)
         
         return jsonify({
             'status': 'ready',
             'document_count': doc_count,
             'active_sessions': session_count,
+            'model': 'gpt-3.5-turbo',
+            'search_results': 3,
             'message': '챗봇이 정상적으로 작동 중입니다.'
         }), 200
         
