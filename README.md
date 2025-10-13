@@ -17,3 +17,5 @@
 2. sudo systemctl start Manager_Page
 3. sudo systemctl start nginx
 
+### 웹 서버 재시작
+kill -HUP 191226
