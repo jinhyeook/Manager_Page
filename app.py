@@ -2023,36 +2023,27 @@ def initialize_rag_system():
         # 3) 검색기 생성 (상위 3개 결과)
         retriever = vector_store.as_retriever(search_kwargs={"k": 3})
         
-        # 4) 프롬프트 템플릿 설정
-        template = """당신은 rAider 킥보드 공유 서비스의 고객 지원 챗봇입니다. 
-다음 정보를 바탕으로 사용자의 질문에 답변해주세요.
+        template = """You are a customer support chatbot for the rAider scooter sharing service.
+Please answer the user's questions based on the following information.
 
-컨텍스트: {context}
+Context: {context}
+ 
+Response Guidelines:
+1. Prioritize the provided document content when answering.
+2. If the information is not in the document, do not guess and say "That information is not in the document".
+3. Respond in a friendly and helpful tone.
+4. Answer questions in Korean if they are asked in Korean, and in English if they are asked in English.
+5. Keep your answers concise and within 200 characters.
+6. For questions not related to the app, say "This is not a question related to the app." Do not add any other words.
 
-답변 가이드라인:
-1. 제공된 문서 내용을 우선적으로 참고하여 답변하세요.
-2. 문서에 없는 정보는 추측하지 말고 "문서에 해당 정보가 없습니다"라고 말하세요.
-3. 친근하고 도움이 되는 톤으로 답변하세요.
-4. 한국어 질문은 한국어로 대답하고, 영어 질문은 영어로 대답하세요.
-5. 답변은 200자 이내로 간결하게 작성하세요.
-6. 앱과 관련되지 않은 질문에 대해서는 "앱과 관련된 질문이 아닙니다."라고 말하세요. "앱과 관련된 질문이 아닙니다."외에 말을 덧붙이지 마세요.
+Example 1)
+Question: Who made the app?
+Answer: The rAider app was created by the Department of Software at Anyang University. Three people participated in its creation: Sojeong Park, Beomjin Jeong, and Jinhyeok Kim. The development period was from March 2025 to September 2020.
 
-예시 1)
-질문: 앱 누가 만들었어?
-답변: rAider 앱은 안양대학교 소프트웨어학과에서 제작되었습니다. 제작에 참여한 인원은 총 3명으로, 박소정, 정범진, 김진혁 님들이 참여하였습니다. 제작 기간은 2025년 3월부터 2020년 9월까지였습니다.
-
-예시 2)
-질문 : 배고파!
-답변 : 앱과 관련된 질문이 아닙니다.
-
-
+Example 2)
+Question: I'm hungry!
+Answer: This is not a question related to the app.
 """
-        
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", template),
-            ("placeholder", "{chat_history}"),
-            ("human", "{question}")
-        ])
         
         # 5) 문서 포맷팅 함수
         def format_docs(docs):
@@ -2071,7 +2062,7 @@ def initialize_rag_system():
             client = openai.OpenAI(api_key=api_key)
             
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": template.format(context=context)},
                     {"role": "user", "content": question}

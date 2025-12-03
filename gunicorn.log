@@ -3010,3 +3010,3935 @@ Failed to send telemetry event ClientStartEvent: capture() takes 1 positional ar
 Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
 Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
 Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 2
+새 벡터DB 생성 중...
+문서의 수: 2
+✅ RAG 시스템 초기화 완료
+=== RAG 챗봇 요청 ===
+질문: 앱 제작기간이 얼마나돼?
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱의 제작 기간은 2025년 3월부터 2025년 10월까지였습니다.
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841549218,
+  "images": [
+    {
+      "uid": "dafafe386aa843e3b09ee87872980e0d",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 203.0,
+                "y": 58.0
+              },
+              {
+                "x": 488.0,
+                "y": 58.0
+              },
+              {
+                "x": 487.0,
+                "y": 97.0
+              },
+              {
+                "x": 203.0,
+                "y": 97.0
+              }
+            ]
+          },
+          "inferText": "11-19-6032 -40",
+          "inferConfidence": 0.9928,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 203.0,
+                    "y": 58.0
+                  },
+                  {
+                    "x": 394.0,
+                    "y": 58.0
+                  },
+                  {
+                    "x": 394.0,
+                    "y": 97.0
+                  },
+                  {
+                    "x": 203.0,
+                    "y": 97.0
+                  }
+                ]
+              },
+              "inferText": "11-19-6032",
+              "inferConfidence": 0.9979,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 430.0,
+                    "y": 59.0
+                  },
+                  {
+                    "x": 488.0,
+                    "y": 60.0
+                  },
+                  {
+                    "x": 487.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 430.0,
+                    "y": 91.0
+                  }
+                ]
+              },
+              "inferText": "-40",
+              "inferConfidence": 0.9877,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 204.0,
+                "y": 102.0
+              },
+              {
+                "x": 283.0,
+                "y": 101.0
+              },
+              {
+                "x": 283.0,
+                "y": 132.0
+              },
+              {
+                "x": 204.0,
+                "y": 133.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9997,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 204.0,
+                    "y": 102.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 133.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9997,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 202.0,
+                "y": 131.0
+              },
+              {
+                "x": 385.0,
+                "y": 129.0
+              },
+              {
+                "x": 385.0,
+                "y": 156.0
+              },
+              {
+                "x": 202.0,
+                "y": 158.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.996,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 202.0,
+                    "y": 131.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 129.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 156.0
+                  },
+                  {
+                    "x": 202.0,
+                    "y": 158.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.996,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 203.0,
+                "y": 333.0
+              },
+              {
+                "x": 311.0,
+                "y": 331.0
+              },
+              {
+                "x": 311.0,
+                "y": 353.0
+              },
+              {
+                "x": 204.0,
+                "y": 355.0
+              }
+            ]
+          },
+          "inferText": "2019.01.17.",
+          "inferConfidence": 0.9906,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 203.0,
+                    "y": 333.0
+                  },
+                  {
+                    "x": 311.0,
+                    "y": 331.0
+                  },
+                  {
+                    "x": 311.0,
+                    "y": 353.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 355.0
+                  }
+                ]
+              },
+              "inferText": "2019.01.17.",
+              "inferConfidence": 0.9906,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 241.0,
+              "y": 35.0
+            },
+            {
+              "x": 395.0,
+              "y": 35.0
+            },
+            {
+              "x": 395.0,
+              "y": 61.0
+            },
+            {
+              "x": 241.0,
+              "y": 61.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9994,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 241.0,
+                  "y": 35.0
+                },
+                {
+                  "x": 395.0,
+                  "y": 35.0
+                },
+                {
+                  "x": 395.0,
+                  "y": 61.0
+                },
+                {
+                  "x": 241.0,
+                  "y": 61.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9994,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841562757,
+  "images": [
+    {
+      "uid": "7f5bd0b5027243b2b98783d2fe5e70fa",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 193.0,
+                "y": 61.0
+              },
+              {
+                "x": 478.0,
+                "y": 62.0
+              },
+              {
+                "x": 477.0,
+                "y": 102.0
+              },
+              {
+                "x": 192.0,
+                "y": 101.0
+              }
+            ]
+          },
+          "inferText": "11-19-603204-40",
+          "inferConfidence": 0.999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 193.0,
+                    "y": 61.0
+                  },
+                  {
+                    "x": 478.0,
+                    "y": 62.0
+                  },
+                  {
+                    "x": 477.0,
+                    "y": 102.0
+                  },
+                  {
+                    "x": 192.0,
+                    "y": 101.0
+                  }
+                ]
+              },
+              "inferText": "11-19-603204-40",
+              "inferConfidence": 0.999,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 192.0,
+                "y": 105.0
+              },
+              {
+                "x": 270.0,
+                "y": 105.0
+              },
+              {
+                "x": 270.0,
+                "y": 135.0
+              },
+              {
+                "x": 192.0,
+                "y": 135.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 192.0,
+                    "y": 105.0
+                  },
+                  {
+                    "x": 270.0,
+                    "y": 105.0
+                  },
+                  {
+                    "x": 270.0,
+                    "y": 135.0
+                  },
+                  {
+                    "x": 192.0,
+                    "y": 135.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9999,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 190.0,
+                "y": 132.0
+              },
+              {
+                "x": 374.0,
+                "y": 132.0
+              },
+              {
+                "x": 374.0,
+                "y": 160.0
+              },
+              {
+                "x": 190.0,
+                "y": 160.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9982,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 190.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 374.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 374.0,
+                    "y": 160.0
+                  },
+                  {
+                    "x": 190.0,
+                    "y": 160.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9982,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 189.0,
+                "y": 335.0
+              },
+              {
+                "x": 290.0,
+                "y": 335.0
+              },
+              {
+                "x": 290.0,
+                "y": 354.0
+              },
+              {
+                "x": 189.0,
+                "y": 354.0
+              }
+            ]
+          },
+          "inferText": "2019 01 17",
+          "inferConfidence": 0.99983335,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 189.0,
+                    "y": 336.0
+                  },
+                  {
+                    "x": 235.0,
+                    "y": 336.0
+                  },
+                  {
+                    "x": 235.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 189.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "2019",
+              "inferConfidence": 1.0,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 235.0,
+                    "y": 336.0
+                  },
+                  {
+                    "x": 262.0,
+                    "y": 336.0
+                  },
+                  {
+                    "x": 262.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 235.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "01",
+              "inferConfidence": 0.9995,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 265.0,
+                    "y": 335.0
+                  },
+                  {
+                    "x": 290.0,
+                    "y": 335.0
+                  },
+                  {
+                    "x": 290.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 265.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "17",
+              "inferConfidence": 1.0,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 230.0,
+              "y": 38.0
+            },
+            {
+              "x": 385.0,
+              "y": 40.0
+            },
+            {
+              "x": 384.0,
+              "y": 66.0
+            },
+            {
+              "x": 229.0,
+              "y": 65.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9996,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 230.0,
+                  "y": 38.0
+                },
+                {
+                  "x": 385.0,
+                  "y": 40.0
+                },
+                {
+                  "x": 384.0,
+                  "y": 66.0
+                },
+                {
+                  "x": 229.0,
+                  "y": 65.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9996,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 2
+기존 벡터DB 로드 중...
+문서의 수: 2
+✅ RAG 시스템 초기화 완료
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=ㅠum123, 저장된 비밀번호=bum123
+비밀번호 불일치
+로그인 시도: manager_id=so123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'so123', 'manager_pw': 'so123', 'position': '박소정'}
+비밀번호 검증: 입력=so123, 저장된 비밀번호=so123
+인증 요청: name=박소정, driver_license=11-19-6032 -40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: None
+인증 요청: name=박소정, driver_license=11-19-603204-40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: {'USER_ID': 'user_861f02af', 'name': '박소정', 'driver_license_number': '11-19-603204-40', 'personal_number': '970909-2152314'}
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841599215,
+  "images": [
+    {
+      "uid": "a3df667163b048fcab014656eaaf62a7",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 195.0,
+                "y": 56.0
+              },
+              {
+                "x": 494.0,
+                "y": 53.0
+              },
+              {
+                "x": 495.0,
+                "y": 95.0
+              },
+              {
+                "x": 195.0,
+                "y": 97.0
+              }
+            ]
+          },
+          "inferText": "11-19-603204-40",
+          "inferConfidence": 0.9995,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 195.0,
+                    "y": 56.0
+                  },
+                  {
+                    "x": 494.0,
+                    "y": 53.0
+                  },
+                  {
+                    "x": 495.0,
+                    "y": 95.0
+                  },
+                  {
+                    "x": 195.0,
+                    "y": 97.0
+                  }
+                ]
+              },
+              "inferText": "11-19-603204-40",
+              "inferConfidence": 0.9995,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 196.0,
+                "y": 101.0
+              },
+              {
+                "x": 277.0,
+                "y": 101.0
+              },
+              {
+                "x": 277.0,
+                "y": 132.0
+              },
+              {
+                "x": 196.0,
+                "y": 133.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 196.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 277.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 277.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 196.0,
+                    "y": 133.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9999,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 193.0,
+                "y": 131.0
+              },
+              {
+                "x": 384.0,
+                "y": 126.0
+              },
+              {
+                "x": 385.0,
+                "y": 156.0
+              },
+              {
+                "x": 194.0,
+                "y": 161.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9967,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 193.0,
+                    "y": 131.0
+                  },
+                  {
+                    "x": 384.0,
+                    "y": 126.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 156.0
+                  },
+                  {
+                    "x": 194.0,
+                    "y": 161.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9967,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 244.0,
+                "y": 340.0
+              },
+              {
+                "x": 297.0,
+                "y": 340.0
+              },
+              {
+                "x": 297.0,
+                "y": 354.0
+              },
+              {
+                "x": 244.0,
+                "y": 354.0
+              }
+            ]
+          },
+          "inferText": "01 17",
+          "inferConfidence": 0.9999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 244.0,
+                    "y": 341.0
+                  },
+                  {
+                    "x": 269.0,
+                    "y": 341.0
+                  },
+                  {
+                    "x": 269.0,
+                    "y": 353.0
+                  },
+                  {
+                    "x": 244.0,
+                    "y": 353.0
+                  }
+                ]
+              },
+              "inferText": "01",
+              "inferConfidence": 0.9999,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 275.0,
+                    "y": 340.0
+                  },
+                  {
+                    "x": 297.0,
+                    "y": 340.0
+                  },
+                  {
+                    "x": 297.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 275.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "17",
+              "inferConfidence": 0.9999,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 235.0,
+              "y": 31.0
+            },
+            {
+              "x": 397.0,
+              "y": 31.0
+            },
+            {
+              "x": 397.0,
+              "y": 58.0
+            },
+            {
+              "x": 235.0,
+              "y": 58.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9991,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 235.0,
+                  "y": 31.0
+                },
+                {
+                  "x": 397.0,
+                  "y": 31.0
+                },
+                {
+                  "x": 397.0,
+                  "y": 58.0
+                },
+                {
+                  "x": 235.0,
+                  "y": 58.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9991,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=박소정, driver_license=11-19-603204-40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: {'USER_ID': 'user_861f02af', 'name': '박소정', 'driver_license_number': '11-19-603204-40', 'personal_number': '970909-2152314'}
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841850464,
+  "images": [
+    {
+      "uid": "d89ca0f0ae4b4b368fd4b3b5f49d4bea",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 191.0,
+                "y": 54.0
+              },
+              {
+                "x": 496.0,
+                "y": 52.0
+              },
+              {
+                "x": 496.0,
+                "y": 94.0
+              },
+              {
+                "x": 191.0,
+                "y": 96.0
+              }
+            ]
+          },
+          "inferText": "11-19-6032 -40",
+          "inferConfidence": 0.99895,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 191.0,
+                    "y": 54.0
+                  },
+                  {
+                    "x": 396.0,
+                    "y": 52.0
+                  },
+                  {
+                    "x": 397.0,
+                    "y": 94.0
+                  },
+                  {
+                    "x": 191.0,
+                    "y": 96.0
+                  }
+                ]
+              },
+              "inferText": "11-19-6032",
+              "inferConfidence": 0.9988,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 431.0,
+                    "y": 54.0
+                  },
+                  {
+                    "x": 496.0,
+                    "y": 54.0
+                  },
+                  {
+                    "x": 496.0,
+                    "y": 90.0
+                  },
+                  {
+                    "x": 431.0,
+                    "y": 90.0
+                  }
+                ]
+              },
+              "inferText": "-40",
+              "inferConfidence": 0.9991,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 191.0,
+                "y": 101.0
+              },
+              {
+                "x": 275.0,
+                "y": 100.0
+              },
+              {
+                "x": 275.0,
+                "y": 133.0
+              },
+              {
+                "x": 191.0,
+                "y": 133.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9999,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 191.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 275.0,
+                    "y": 100.0
+                  },
+                  {
+                    "x": 275.0,
+                    "y": 133.0
+                  },
+                  {
+                    "x": 191.0,
+                    "y": 133.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9999,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 189.0,
+                "y": 131.0
+              },
+              {
+                "x": 385.0,
+                "y": 127.0
+              },
+              {
+                "x": 386.0,
+                "y": 157.0
+              },
+              {
+                "x": 189.0,
+                "y": 161.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9991,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 189.0,
+                    "y": 131.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 127.0
+                  },
+                  {
+                    "x": 386.0,
+                    "y": 157.0
+                  },
+                  {
+                    "x": 189.0,
+                    "y": 161.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9991,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 175.48488,
+                "y": 353.50027
+              },
+              {
+                "x": 310.02127,
+                "y": 353.67825
+              },
+              {
+                "x": 310.43643,
+                "y": 397.16302
+              },
+              {
+                "x": 172.54199,
+                "y": 397.09116
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 231.0,
+              "y": 29.0
+            },
+            {
+              "x": 397.0,
+              "y": 28.0
+            },
+            {
+              "x": 397.0,
+              "y": 56.0
+            },
+            {
+              "x": 231.0,
+              "y": 57.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9998,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 231.0,
+                  "y": 29.0
+                },
+                {
+                  "x": 397.0,
+                  "y": 28.0
+                },
+                {
+                  "x": 397.0,
+                  "y": 56.0
+                },
+                {
+                  "x": 231.0,
+                  "y": 57.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9998,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841543222,
+  "images": [
+    {
+      "uid": "927a2eed196f44908a48d0a02ee25042",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 203.0,
+                "y": 58.0
+              },
+              {
+                "x": 488.0,
+                "y": 58.0
+              },
+              {
+                "x": 487.0,
+                "y": 97.0
+              },
+              {
+                "x": 203.0,
+                "y": 97.0
+              }
+            ]
+          },
+          "inferText": "11-19-6032 -40",
+          "inferConfidence": 0.99275005,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 203.0,
+                    "y": 58.0
+                  },
+                  {
+                    "x": 394.0,
+                    "y": 58.0
+                  },
+                  {
+                    "x": 394.0,
+                    "y": 97.0
+                  },
+                  {
+                    "x": 203.0,
+                    "y": 97.0
+                  }
+                ]
+              },
+              "inferText": "11-19-6032",
+              "inferConfidence": 0.9979,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 430.0,
+                    "y": 59.0
+                  },
+                  {
+                    "x": 488.0,
+                    "y": 60.0
+                  },
+                  {
+                    "x": 487.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 430.0,
+                    "y": 91.0
+                  }
+                ]
+              },
+              "inferText": "-40",
+              "inferConfidence": 0.9876,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 204.0,
+                "y": 102.0
+              },
+              {
+                "x": 283.0,
+                "y": 101.0
+              },
+              {
+                "x": 283.0,
+                "y": 132.0
+              },
+              {
+                "x": 204.0,
+                "y": 133.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9997,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 204.0,
+                    "y": 102.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 133.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9997,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 202.0,
+                "y": 131.0
+              },
+              {
+                "x": 385.0,
+                "y": 129.0
+              },
+              {
+                "x": 385.0,
+                "y": 156.0
+              },
+              {
+                "x": 202.0,
+                "y": 158.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.996,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 202.0,
+                    "y": 131.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 129.0
+                  },
+                  {
+                    "x": 385.0,
+                    "y": 156.0
+                  },
+                  {
+                    "x": 202.0,
+                    "y": 158.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.996,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 203.0,
+                "y": 333.0
+              },
+              {
+                "x": 311.0,
+                "y": 331.0
+              },
+              {
+                "x": 311.0,
+                "y": 353.0
+              },
+              {
+                "x": 204.0,
+                "y": 355.0
+              }
+            ]
+          },
+          "inferText": "2019.01.17.",
+          "inferConfidence": 0.9906,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 203.0,
+                    "y": 333.0
+                  },
+                  {
+                    "x": 311.0,
+                    "y": 331.0
+                  },
+                  {
+                    "x": 311.0,
+                    "y": 353.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 355.0
+                  }
+                ]
+              },
+              "inferText": "2019.01.17.",
+              "inferConfidence": 0.9906,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 241.0,
+              "y": 35.0
+            },
+            {
+              "x": 395.0,
+              "y": 35.0
+            },
+            {
+              "x": 395.0,
+              "y": 61.0
+            },
+            {
+              "x": 241.0,
+              "y": 61.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9994,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 241.0,
+                  "y": 35.0
+                },
+                {
+                  "x": 395.0,
+                  "y": 35.0
+                },
+                {
+                  "x": 395.0,
+                  "y": 61.0
+                },
+                {
+                  "x": 241.0,
+                  "y": 61.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9994,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=박소정, driver_license=11-19-6032 -40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: None
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760842066902,
+  "images": [
+    {
+      "uid": "6975710581b947a0bbb1fe31ee8a80c2",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 183.0,
+                "y": 58.0
+              },
+              {
+                "x": 482.0,
+                "y": 57.0
+              },
+              {
+                "x": 482.0,
+                "y": 97.0
+              },
+              {
+                "x": 184.0,
+                "y": 99.0
+              }
+            ]
+          },
+          "inferText": "11-19-603204-40",
+          "inferConfidence": 0.9997,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 183.0,
+                    "y": 58.0
+                  },
+                  {
+                    "x": 482.0,
+                    "y": 57.0
+                  },
+                  {
+                    "x": 482.0,
+                    "y": 97.0
+                  },
+                  {
+                    "x": 184.0,
+                    "y": 99.0
+                  }
+                ]
+              },
+              "inferText": "11-19-603204-40",
+              "inferConfidence": 0.9997,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 183.0,
+                "y": 103.0
+              },
+              {
+                "x": 263.0,
+                "y": 103.0
+              },
+              {
+                "x": 263.0,
+                "y": 134.0
+              },
+              {
+                "x": 183.0,
+                "y": 134.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9998,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 183.0,
+                    "y": 103.0
+                  },
+                  {
+                    "x": 263.0,
+                    "y": 103.0
+                  },
+                  {
+                    "x": 263.0,
+                    "y": 134.0
+                  },
+                  {
+                    "x": 183.0,
+                    "y": 134.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9998,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 181.0,
+                "y": 132.0
+              },
+              {
+                "x": 371.0,
+                "y": 131.0
+              },
+              {
+                "x": 371.0,
+                "y": 159.0
+              },
+              {
+                "x": 181.0,
+                "y": 160.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9983,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 181.0,
+                    "y": 132.0
+                  },
+                  {
+                    "x": 371.0,
+                    "y": 131.0
+                  },
+                  {
+                    "x": 371.0,
+                    "y": 159.0
+                  },
+                  {
+                    "x": 181.0,
+                    "y": 160.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9983,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 231.0,
+                "y": 340.0
+              },
+              {
+                "x": 282.0,
+                "y": 340.0
+              },
+              {
+                "x": 282.0,
+                "y": 353.0
+              },
+              {
+                "x": 231.0,
+                "y": 353.0
+              }
+            ]
+          },
+          "inferText": "01 17",
+          "inferConfidence": 0.92455,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 231.0,
+                    "y": 341.0
+                  },
+                  {
+                    "x": 249.0,
+                    "y": 341.0
+                  },
+                  {
+                    "x": 249.0,
+                    "y": 352.0
+                  },
+                  {
+                    "x": 231.0,
+                    "y": 352.0
+                  }
+                ]
+              },
+              "inferText": "01",
+              "inferConfidence": 0.8491,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 261.0,
+                    "y": 340.0
+                  },
+                  {
+                    "x": 282.0,
+                    "y": 340.0
+                  },
+                  {
+                    "x": 282.0,
+                    "y": 353.0
+                  },
+                  {
+                    "x": 261.0,
+                    "y": 353.0
+                  }
+                ]
+              },
+              "inferText": "17",
+              "inferConfidence": 1.0,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 222.0,
+              "y": 34.0
+            },
+            {
+              "x": 384.0,
+              "y": 33.0
+            },
+            {
+              "x": 384.0,
+              "y": 60.0
+            },
+            {
+              "x": 223.0,
+              "y": 62.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9998,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 222.0,
+                  "y": 34.0
+                },
+                {
+                  "x": 384.0,
+                  "y": 33.0
+                },
+                {
+                  "x": 384.0,
+                  "y": 60.0
+                },
+                {
+                  "x": 223.0,
+                  "y": 62.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9998,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760841863980,
+  "images": [
+    {
+      "uid": "e8a358b0aae0457f852e7a9154c9671f",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 205.0,
+                "y": 46.0
+              },
+              {
+                "x": 505.0,
+                "y": 45.0
+              },
+              {
+                "x": 505.0,
+                "y": 86.0
+              },
+              {
+                "x": 205.0,
+                "y": 87.0
+              }
+            ]
+          },
+          "inferText": "11-19-603204-40",
+          "inferConfidence": 0.9993,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 205.0,
+                    "y": 46.0
+                  },
+                  {
+                    "x": 505.0,
+                    "y": 45.0
+                  },
+                  {
+                    "x": 505.0,
+                    "y": 86.0
+                  },
+                  {
+                    "x": 205.0,
+                    "y": 87.0
+                  }
+                ]
+              },
+              "inferText": "11-19-603204-40",
+              "inferConfidence": 0.9993,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 205.0,
+                "y": 92.0
+              },
+              {
+                "x": 286.0,
+                "y": 92.0
+              },
+              {
+                "x": 286.0,
+                "y": 123.0
+              },
+              {
+                "x": 205.0,
+                "y": 123.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9998,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 205.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 286.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 286.0,
+                    "y": 123.0
+                  },
+                  {
+                    "x": 205.0,
+                    "y": 123.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9998,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 202.0,
+                "y": 121.0
+              },
+              {
+                "x": 395.0,
+                "y": 119.0
+              },
+              {
+                "x": 396.0,
+                "y": 147.0
+              },
+              {
+                "x": 202.0,
+                "y": 150.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9991,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 202.0,
+                    "y": 121.0
+                  },
+                  {
+                    "x": 395.0,
+                    "y": 119.0
+                  },
+                  {
+                    "x": 396.0,
+                    "y": 147.0
+                  },
+                  {
+                    "x": 202.0,
+                    "y": 150.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9991,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 204.0,
+                "y": 332.0
+              },
+              {
+                "x": 314.0,
+                "y": 331.0
+              },
+              {
+                "x": 315.0,
+                "y": 354.0
+              },
+              {
+                "x": 204.0,
+                "y": 355.0
+              }
+            ]
+          },
+          "inferText": "2019.01.17.",
+          "inferConfidence": 0.9918,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 204.0,
+                    "y": 332.0
+                  },
+                  {
+                    "x": 314.0,
+                    "y": 331.0
+                  },
+                  {
+                    "x": 315.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 355.0
+                  }
+                ]
+              },
+              "inferText": "2019.01.17.",
+              "inferConfidence": 0.9918,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 244.0,
+              "y": 21.0
+            },
+            {
+              "x": 408.0,
+              "y": 22.0
+            },
+            {
+              "x": 408.0,
+              "y": 49.0
+            },
+            {
+              "x": 244.0,
+              "y": 49.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9992,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 244.0,
+                  "y": 21.0
+                },
+                {
+                  "x": 408.0,
+                  "y": 22.0
+                },
+                {
+                  "x": 408.0,
+                  "y": 49.0
+                },
+                {
+                  "x": 244.0,
+                  "y": 49.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9992,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=박소정, driver_license=11-19-603204-40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: {'USER_ID': 'user_861f02af', 'name': '박소정', 'driver_license_number': '11-19-603204-40', 'personal_number': '970909-2152314'}
+인증 요청: name=박소정, driver_license=11-19-603204-40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: {'USER_ID': 'user_861f02af', 'name': '박소정', 'driver_license_number': '11-19-603204-40', 'personal_number': '970909-2152314'}
+인증 요청: name=박소정, driver_license=11-19-603204-40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: {'USER_ID': 'user_861f02af', 'name': '박소정', 'driver_license_number': '11-19-603204-40', 'personal_number': '970909-2152314'}
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+[2025-10-19 14:50:58 +0900] [191226] [INFO] Handling signal: hup
+[2025-10-19 14:50:58 +0900] [191226] [INFO] Hang up: Master
+[2025-10-19 14:50:58 +0900] [258437] [INFO] Booting worker with pid: 258437
+[2025-10-19 14:50:58 +0900] [258440] [INFO] Booting worker with pid: 258440
+[2025-10-19 14:50:58 +0900] [229275] [INFO] Worker exiting (pid: 229275)
+
+인증 요청: name=박소정, driver_license=11-19-6032 -40, ssn=970909-2152314, user_id=user_861f02af
+DB 조회 결과: None
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+로그인 시도: manager_id=jin123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'jin123', 'manager_pw': 'jin123', 'position': '김진혁'}
+비밀번호 검증: 입력=jin123, 저장된 비밀번호=jin123
+=== RAG 챗봇 요청 ===
+질문: what is the development background?
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: The development background of the rAider app is to address the increasing usage of personal mobility devices like kickboards and bicycles, which has led to a rise in safety accidents. The app aims to provide various features to ensure safe usage, such as detecting front hazards, determining helmet usage, and automatically detecting and reporting improper usage.
+=== RAG 챗봇 요청 ===
+질문: what is the development backgound
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱은 최근 증가하는 개인형 이동장치의 이용량과 안전사고 증가에 대응하기 위해 개발되었습니다. 여러 사용자가 한 기기에 탑승하거나 헬멧을 착용하지 않는 등의 안전 문제를 해결하기 위해 rAider는 안전한 이용을 보장하는 다양한 기능을 제공합니다. 이에 따라 개발된 rAider는 단순한 대여 서비스를 넘어서 안전을 최우선으로 고려하는 스마트한 개인형 이동장치 관리 플랫폼을 지향합니다.
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+[2025-10-19 14:50:58 +0900] [258444] [INFO] Booting worker with pid: 258444
+[2025-10-19 14:50:58 +0900] [229276] [INFO] Worker exiting (pid: 229276)
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760842307234,
+  "images": [
+    {
+      "uid": "7c6bde09d3e841dcbb99cb132e3d7b7e",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 203.0,
+                "y": 72.0
+              },
+              {
+                "x": 504.0,
+                "y": 75.0
+              },
+              {
+                "x": 503.0,
+                "y": 116.0
+              },
+              {
+                "x": 203.0,
+                "y": 113.0
+              }
+            ]
+          },
+          "inferText": "11-19-603204-40",
+          "inferConfidence": 0.9996,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 203.0,
+                    "y": 72.0
+                  },
+                  {
+                    "x": 504.0,
+                    "y": 75.0
+                  },
+                  {
+                    "x": 503.0,
+                    "y": 116.0
+                  },
+                  {
+                    "x": 203.0,
+                    "y": 113.0
+                  }
+                ]
+              },
+              "inferText": "11-19-603204-40",
+              "inferConfidence": 0.9996,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 202.0,
+                "y": 118.0
+              },
+              {
+                "x": 283.0,
+                "y": 118.0
+              },
+              {
+                "x": 283.0,
+                "y": 150.0
+              },
+              {
+                "x": 202.0,
+                "y": 149.0
+              }
+            ]
+          },
+          "inferText": "박소정",
+          "inferConfidence": 0.9998,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 202.0,
+                    "y": 118.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 118.0
+                  },
+                  {
+                    "x": 283.0,
+                    "y": 150.0
+                  },
+                  {
+                    "x": 202.0,
+                    "y": 149.0
+                  }
+                ]
+              },
+              "inferText": "박소정",
+              "inferConfidence": 0.9998,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 200.0,
+                "y": 147.0
+              },
+              {
+                "x": 393.0,
+                "y": 147.0
+              },
+              {
+                "x": 393.0,
+                "y": 176.0
+              },
+              {
+                "x": 200.0,
+                "y": 176.0
+              }
+            ]
+          },
+          "inferText": "970909-2152314",
+          "inferConfidence": 0.9986,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 200.0,
+                    "y": 147.0
+                  },
+                  {
+                    "x": 393.0,
+                    "y": 147.0
+                  },
+                  {
+                    "x": 393.0,
+                    "y": 176.0
+                  },
+                  {
+                    "x": 200.0,
+                    "y": 176.0
+                  }
+                ]
+              },
+              "inferText": "970909-2152314",
+              "inferConfidence": 0.9986,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 187.50667,
+                "y": 361.70004
+              },
+              {
+                "x": 311.89175,
+                "y": 362.51404
+              },
+              {
+                "x": 311.24893,
+                "y": 401.67184
+              },
+              {
+                "x": 184.72047,
+                "y": 400.9531
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 243.0,
+              "y": 48.0
+            },
+            {
+              "x": 406.0,
+              "y": 50.0
+            },
+            {
+              "x": 406.0,
+              "y": 78.0
+            },
+            {
+              "x": 242.0,
+              "y": 76.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.999,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 243.0,
+                  "y": 48.0
+                },
+                {
+                  "x": 406.0,
+                  "y": 50.0
+                },
+                {
+                  "x": 406.0,
+                  "y": 78.0
+                },
+                {
+                  "x": 242.0,
+                  "y": 76.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.999,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 2
+기존 벡터DB 로드 중...
+문서의 수: 2
+✅ RAG 시스템 초기화 완료
+인증 요청: name=홍길순, driver_license=21-19-174133-01, ssn=000829-2134567, user_id=user_c3b5daed
+DB 조회 결과: {'USER_ID': 'user_c3b5daed', 'name': '홍길순', 'driver_license_number': '21-19-174133-01', 'personal_number': '000829-2134567'}
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+[2025-10-19 14:50:58 +0900] [229277] [INFO] Worker exiting (pid: 229277)
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760847913595,
+  "images": [
+    {
+      "uid": "fc7722fb45eb472d81a2114bb9af79dc",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 234.0,
+                "y": 56.0
+              },
+              {
+                "x": 490.0,
+                "y": 59.0
+              },
+              {
+                "x": 490.0,
+                "y": 91.0
+              },
+              {
+                "x": 234.0,
+                "y": 87.0
+              }
+            ]
+          },
+          "inferText": "21-19-174133-01",
+          "inferConfidence": 0.998,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 234.0,
+                    "y": 56.0
+                  },
+                  {
+                    "x": 490.0,
+                    "y": 59.0
+                  },
+                  {
+                    "x": 490.0,
+                    "y": 91.0
+                  },
+                  {
+                    "x": 234.0,
+                    "y": 87.0
+                  }
+                ]
+              },
+              "inferText": "21-19-174133-01",
+              "inferConfidence": 0.998,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 232.0,
+                "y": 92.0
+              },
+              {
+                "x": 300.0,
+                "y": 92.0
+              },
+              {
+                "x": 300.0,
+                "y": 118.0
+              },
+              {
+                "x": 232.0,
+                "y": 118.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 232.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 300.0,
+                    "y": 92.0
+                  },
+                  {
+                    "x": 300.0,
+                    "y": 118.0
+                  },
+                  {
+                    "x": 232.0,
+                    "y": 118.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 229.0,
+                "y": 116.0
+              },
+              {
+                "x": 401.0,
+                "y": 116.0
+              },
+              {
+                "x": 401.0,
+                "y": 142.0
+              },
+              {
+                "x": 229.0,
+                "y": 142.0
+              }
+            ]
+          },
+          "inferText": "000829-2134567",
+          "inferConfidence": 0.9994,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 229.0,
+                    "y": 116.0
+                  },
+                  {
+                    "x": 401.0,
+                    "y": 116.0
+                  },
+                  {
+                    "x": 401.0,
+                    "y": 142.0
+                  },
+                  {
+                    "x": 229.0,
+                    "y": 142.0
+                  }
+                ]
+              },
+              "inferText": "000829-2134567",
+              "inferConfidence": 0.9994,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 221.73929,
+                "y": 306.39417
+              },
+              {
+                "x": 324.20773,
+                "y": 318.33896
+              },
+              {
+                "x": 322.61545,
+                "y": 356.33673
+              },
+              {
+                "x": 218.05498,
+                "y": 343.17072
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 268.0,
+              "y": 26.0
+            },
+            {
+              "x": 411.0,
+              "y": 29.0
+            },
+            {
+              "x": 410.0,
+              "y": 55.0
+            },
+            {
+              "x": 268.0,
+              "y": 53.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9999,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 268.0,
+                  "y": 26.0
+                },
+                {
+                  "x": 411.0,
+                  "y": 29.0
+                },
+                {
+                  "x": 410.0,
+                  "y": 55.0
+                },
+                {
+                  "x": 268.0,
+                  "y": 53.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9999,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+=== RAG 챗봇 요청 ===
+질문: who are you?
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: I am a customer support chatbot for the rAider scooter sharing service. I am here to help you with any questions you may have about the rAider app. How can I assist you today?
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: True
+벡터DB 상태: True
+[2025-10-19 14:50:58 +0900] [191226] [ERROR] Worker (pid:229275) was sent SIGTERM!
+[2025-10-19 14:50:58 +0900] [191226] [ERROR] Worker (pid:229276) was sent SIGTERM!
+[2025-10-19 14:50:58 +0900] [191226] [ERROR] Worker (pid:229277) was sent SIGTERM!
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+디바이스 로그 조회 요청: user_id = user_861f02af
+조회된 로그 개수: 0
+반환할 디바이스 로그: []
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760854937900,
+  "images": [
+    {
+      "uid": "8b9dd4f9813c4a9ea7fff0322e73076a",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 200.0,
+                "y": 63.0
+              },
+              {
+                "x": 477.0,
+                "y": 63.0
+              },
+              {
+                "x": 477.0,
+                "y": 95.0
+              },
+              {
+                "x": 200.0,
+                "y": 95.0
+              }
+            ]
+          },
+          "inferText": "21-15-174133-01",
+          "inferConfidence": 0.7843,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 200.0,
+                    "y": 63.0
+                  },
+                  {
+                    "x": 477.0,
+                    "y": 63.0
+                  },
+                  {
+                    "x": 477.0,
+                    "y": 95.0
+                  },
+                  {
+                    "x": 200.0,
+                    "y": 95.0
+                  }
+                ]
+              },
+              "inferText": "21-15-174133-01",
+              "inferConfidence": 0.7843,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 198.0,
+                "y": 101.0
+              },
+              {
+                "x": 270.0,
+                "y": 101.0
+              },
+              {
+                "x": 270.0,
+                "y": 128.0
+              },
+              {
+                "x": 198.0,
+                "y": 128.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 198.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 270.0,
+                    "y": 101.0
+                  },
+                  {
+                    "x": 270.0,
+                    "y": 128.0
+                  },
+                  {
+                    "x": 198.0,
+                    "y": 128.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 196.0,
+                "y": 126.0
+              },
+              {
+                "x": 380.0,
+                "y": 126.0
+              },
+              {
+                "x": 380.0,
+                "y": 153.0
+              },
+              {
+                "x": 196.0,
+                "y": 153.0
+              }
+            ]
+          },
+          "inferText": "950829-2134567",
+          "inferConfidence": 0.9993,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 196.0,
+                    "y": 126.0
+                  },
+                  {
+                    "x": 380.0,
+                    "y": 126.0
+                  },
+                  {
+                    "x": 380.0,
+                    "y": 153.0
+                  },
+                  {
+                    "x": 196.0,
+                    "y": 153.0
+                  }
+                ]
+              },
+              "inferText": "950829-2134567",
+              "inferConfidence": 0.9993,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 197.0,
+                "y": 338.0
+              },
+              {
+                "x": 298.0,
+                "y": 338.0
+              },
+              {
+                "x": 298.0,
+                "y": 354.0
+              },
+              {
+                "x": 197.0,
+                "y": 354.0
+              }
+            ]
+          },
+          "inferText": "2025 02.03",
+          "inferConfidence": 0.99979997,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 197.0,
+                    "y": 338.0
+                  },
+                  {
+                    "x": 241.0,
+                    "y": 338.0
+                  },
+                  {
+                    "x": 241.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 197.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "2025",
+              "inferConfidence": 0.9999,
+              "lineBreak": false
+            },
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 245.0,
+                    "y": 339.0
+                  },
+                  {
+                    "x": 298.0,
+                    "y": 339.0
+                  },
+                  {
+                    "x": 298.0,
+                    "y": 354.0
+                  },
+                  {
+                    "x": 245.0,
+                    "y": 354.0
+                  }
+                ]
+              },
+              "inferText": "02.03",
+              "inferConfidence": 0.9997,
+              "lineBreak": false
+            }
+          ]
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 199.0,
+              "y": 28.0
+            },
+            {
+              "x": 385.0,
+              "y": 28.0
+            },
+            {
+              "x": 386.0,
+              "y": 60.0
+            },
+            {
+              "x": 199.0,
+              "y": 61.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9991,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 199.0,
+                  "y": 28.0
+                },
+                {
+                  "x": 385.0,
+                  "y": 28.0
+                },
+                {
+                  "x": 386.0,
+                  "y": 60.0
+                },
+                {
+                  "x": 199.0,
+                  "y": 61.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9991,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=홍길순, driver_license=21-15-174133-01, ssn=950829-2134567, user_id=user_861f02af
+DB 조회 결과: None
+로그인 시도: manager_id=jin123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'jin123', 'manager_pw': 'jin123', 'position': '김진혁'}
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+=== RAG 챗봇 요청 ===
+질문: what is the development backgound
+세션 ID: session_1760366327381
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 2
+기존 벡터DB 로드 중...
+문서의 수: 2
+✅ RAG 시스템 초기화 완료
+RAG 체인 실행 중...
+RAG 체인 응답: The rAider app was developed in response to the increasing use of shared personal mobility devices, which has led to a rise in safety accidents. It aims to provide various features to ensure safe usage.
+=== RAG 챗봇 요청 ===
+질문: im hungry
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: This is not a question related to the app.
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1760854890785,
+  "images": [
+    {
+      "uid": "93f3950ec3f0433196743ec90f10a9d2",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 354,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 182.0,
+                "y": 75.0
+              },
+              {
+                "x": 459.0,
+                "y": 72.0
+              },
+              {
+                "x": 459.0,
+                "y": 105.0
+              },
+              {
+                "x": 182.0,
+                "y": 107.0
+              }
+            ]
+          },
+          "inferText": "21-15-174133-01",
+          "inferConfidence": 0.9864,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 182.0,
+                    "y": 75.0
+                  },
+                  {
+                    "x": 459.0,
+                    "y": 72.0
+                  },
+                  {
+                    "x": 459.0,
+                    "y": 105.0
+                  },
+                  {
+                    "x": 182.0,
+                    "y": 107.0
+                  }
+                ]
+              },
+              "inferText": "21-15-174133-01",
+              "inferConfidence": 0.9864,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 180.0,
+                "y": 112.0
+              },
+              {
+                "x": 252.0,
+                "y": 112.0
+              },
+              {
+                "x": 252.0,
+                "y": 139.0
+              },
+              {
+                "x": 180.0,
+                "y": 139.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 180.0,
+                    "y": 112.0
+                  },
+                  {
+                    "x": 252.0,
+                    "y": 112.0
+                  },
+                  {
+                    "x": 252.0,
+                    "y": 139.0
+                  },
+                  {
+                    "x": 180.0,
+                    "y": 139.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 179.0,
+                "y": 137.0
+              },
+              {
+                "x": 362.0,
+                "y": 136.0
+              },
+              {
+                "x": 362.0,
+                "y": 164.0
+              },
+              {
+                "x": 179.0,
+                "y": 164.0
+              }
+            ]
+          },
+          "inferText": "950829-2134567",
+          "inferConfidence": 0.9994,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 179.0,
+                    "y": 137.0
+                  },
+                  {
+                    "x": 362.0,
+                    "y": 136.0
+                  },
+                  {
+                    "x": 362.0,
+                    "y": 164.0
+                  },
+                  {
+                    "x": 179.0,
+                    "y": 164.0
+                  }
+                ]
+              },
+              "inferText": "950829-2134567",
+              "inferConfidence": 0.9994,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 201.2843,
+                "y": 321.98447
+              },
+              {
+                "x": 291.3849,
+                "y": 329.25204
+              },
+              {
+                "x": 291.66394,
+                "y": 358.85934
+              },
+              {
+                "x": 201.84906,
+                "y": 351.0389
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 181.0,
+              "y": 40.0
+            },
+            {
+              "x": 366.0,
+              "y": 38.0
+            },
+            {
+              "x": 366.0,
+              "y": 70.0
+            },
+            {
+              "x": 181.0,
+              "y": 72.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9999,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 181.0,
+                  "y": 40.0
+                },
+                {
+                  "x": 366.0,
+                  "y": 38.0
+                },
+                {
+                  "x": 366.0,
+                  "y": 70.0
+                },
+                {
+                  "x": 181.0,
+                  "y": 72.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9999,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+=== RAG 챗봇 요청 ===
+질문: 신고 방법 일려줘
+세션 ID: session_1760007544623
+RAG 체인 실행 중...
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+Number of requested results 3 is greater than number of elements in index 2, updating n_results = 2
+[2025-11-26 06:15:03 +0900] [258437] [WARNING] Invalid request from ip=: Invalid HTTP Version: '158.94.210.88/jaws;sh+/tmp/jaws HTTP/1.0'
+[2025-11-26 13:02:42 +0900] [258440] [WARNING] Invalid request from ip=: Invalid HTTP Version: '158.94.210.88/jaws;sh+/tmp/jaws HTTP/1.0'
+[2025-11-28 02:43:44 +0900] [258440] [WARNING] Invalid request from ip=: Invalid HTTP Version: '158.94.210.88/jaws;sh+/tmp/jaws HTTP/1.0'
+[2025-11-28 17:23:38 +0900] [258444] [WARNING] Invalid request from ip=: Invalid HTTP Version: '158.94.210.88/jaws;sh+/tmp/jaws HTTP/1.0'
+[2025-12-01 17:27:38 +0900] [258437] [WARNING] Invalid request from ip=: Invalid HTTP Version: '158.94.210.88/jaws;sh+/tmp/jaws HTTP/1.0'
+비밀번호 검증: 입력=jin123, 저장된 비밀번호=jin123
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+로그인 시도: manager_id=so123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'so123', 'manager_pw': 'so123', 'position': '박소정'}
+비밀번호 검증: 입력=so123, 저장된 비밀번호=so123
+로그인 시도: manager_id=bum123
+SQL 실행: 
+            SELECT manager_id, manager_pw, position
+            FROM manager_info 
+            WHERE manager_id = :manager_id
+        
+조회 결과: {'manager_id': 'bum123', 'manager_pw': 'bum123', 'position': '정범진'}
+비밀번호 검증: 입력=bum123, 저장된 비밀번호=bum123
+=== 챗봇 상태 확인 ===
+RAG 체인 상태: False
+벡터DB 상태: False
+RAG 시스템 초기화 시도...
+=== RAG 시스템 초기화 시작 ===
+문서 로드 중: rAider.pdf
+분할된 청크 수: 2
+기존 벡터DB 로드 중...
+문서의 수: 2
+✅ RAG 시스템 초기화 완료
+=== RAG 챗봇 요청 ===
+질문: 멍청아
+세션 ID: session_1760366327381
+RAG 체인 실행 중...
+RAG 체인 응답: 이 앱과 관련된 질문이 아닙니다.
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '1250928021', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T23:28:48', 'end_time': '2025-10-13T23:29:03', 'fee': 200}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T22:38:57', 'end_time': '2025-10-13T22:39:10', 'fee': 200}]
+디바이스 로그 조회 요청: user_id = user_861f02af
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '0250928013', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}, {'DEVICE_CODE': '1250928025', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}, {'DEVICE_CODE': '0250928011', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}]
+=== RAG 챗봇 요청 ===
+질문: 앱을 누가 만들었지?
+세션 ID: session_1761796393372
+RAG 체인 실행 중...
+RAG 체인 응답: rAider 앱은 안양대학교 소프트웨어학과에서 제작하였으며, 박소정, 정범진, 김진혁 세 명이 참여하였습니다.
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '1250928021', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T23:28:48', 'end_time': '2025-10-13T23:29:03', 'fee': 200}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T22:38:57', 'end_time': '2025-10-13T22:39:10', 'fee': 200}]
+디바이스 로그 조회 요청: user_id = user_c3b5daed
+조회된 로그 개수: 3
+반환할 디바이스 로그: [{'DEVICE_CODE': '1250928021', 'start_time': '2025-10-19T17:35:06', 'end_time': '2025-10-19T17:35:39', 'fee': 400}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T23:28:48', 'end_time': '2025-10-13T23:29:03', 'fee': 200}, {'DEVICE_CODE': '0250928015', 'start_time': '2025-10-13T22:38:57', 'end_time': '2025-10-13T22:39:10', 'fee': 200}]
+{
+  "version": "V2",
+  "requestId": "test_request_id",
+  "timestamp": 1764659285674,
+  "images": [
+    {
+      "uid": "4902ec347cb64ad199ef1530f5af91b7",
+      "name": "test_image",
+      "inferResult": "SUCCESS",
+      "message": "SUCCESS",
+      "matchedTemplate": {
+        "id": 37539,
+        "name": "운전면허증"
+      },
+      "validationResult": {
+        "result": "NO_REQUESTED"
+      },
+      "convertedImageInfo": {
+        "width": 601,
+        "height": 328,
+        "pageIndex": 0,
+        "longImage": false
+      },
+      "fields": [
+        {
+          "name": "번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 207.0,
+                "y": 59.0
+              },
+              {
+                "x": 435.0,
+                "y": 55.0
+              },
+              {
+                "x": 436.0,
+                "y": 84.0
+              },
+              {
+                "x": 207.0,
+                "y": 88.0
+              }
+            ]
+          },
+          "inferText": "21-19-174133-01",
+          "inferConfidence": 0.9989,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 207.0,
+                    "y": 59.0
+                  },
+                  {
+                    "x": 435.0,
+                    "y": 55.0
+                  },
+                  {
+                    "x": 436.0,
+                    "y": 84.0
+                  },
+                  {
+                    "x": 207.0,
+                    "y": 88.0
+                  }
+                ]
+              },
+              "inferText": "21-19-174133-01",
+              "inferConfidence": 0.9989,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "이름",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 207.0,
+                "y": 90.0
+              },
+              {
+                "x": 267.0,
+                "y": 90.0
+              },
+              {
+                "x": 267.0,
+                "y": 114.0
+              },
+              {
+                "x": 207.0,
+                "y": 114.0
+              }
+            ]
+          },
+          "inferText": "홍길순",
+          "inferConfidence": 1.0,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 207.0,
+                    "y": 90.0
+                  },
+                  {
+                    "x": 267.0,
+                    "y": 90.0
+                  },
+                  {
+                    "x": 267.0,
+                    "y": 114.0
+                  },
+                  {
+                    "x": 207.0,
+                    "y": 114.0
+                  }
+                ]
+              },
+              "inferText": "홍길순",
+              "inferConfidence": 1.0,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "주민번호",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 204.0,
+                "y": 111.0
+              },
+              {
+                "x": 357.0,
+                "y": 108.0
+              },
+              {
+                "x": 358.0,
+                "y": 133.0
+              },
+              {
+                "x": 204.0,
+                "y": 136.0
+              }
+            ]
+          },
+          "inferText": "000829-2134567",
+          "inferConfidence": 0.9986,
+          "type": "NORMAL",
+          "subFields": [
+            {
+              "boundingPoly": {
+                "vertices": [
+                  {
+                    "x": 204.0,
+                    "y": 111.0
+                  },
+                  {
+                    "x": 357.0,
+                    "y": 108.0
+                  },
+                  {
+                    "x": 358.0,
+                    "y": 133.0
+                  },
+                  {
+                    "x": 204.0,
+                    "y": 136.0
+                  }
+                ]
+              },
+              "inferText": "000829-2134567",
+              "inferConfidence": 0.9986,
+              "lineBreak": true
+            }
+          ]
+        },
+        {
+          "name": "발급일자",
+          "valueType": "ALL",
+          "boundingPoly": {
+            "vertices": [
+              {
+                "x": 208.14912,
+                "y": 279.30542
+              },
+              {
+                "x": 292.61835,
+                "y": 284.05518
+              },
+              {
+                "x": 291.89404,
+                "y": 314.01007
+              },
+              {
+                "x": 206.54674,
+                "y": 308.74908
+              }
+            ]
+          },
+          "inferText": "",
+          "inferConfidence": 0.0,
+          "type": "NORMAL"
+        }
+      ],
+      "title": {
+        "name": "운전면허증1",
+        "boundingPoly": {
+          "vertices": [
+            {
+              "x": 237.0,
+              "y": 32.0
+            },
+            {
+              "x": 363.0,
+              "y": 30.0
+            },
+            {
+              "x": 364.0,
+              "y": 54.0
+            },
+            {
+              "x": 237.0,
+              "y": 56.0
+            }
+          ]
+        },
+        "inferText": "자동차운전면허증",
+        "inferConfidence": 0.9997,
+        "subFields": [
+          {
+            "boundingPoly": {
+              "vertices": [
+                {
+                  "x": 237.0,
+                  "y": 32.0
+                },
+                {
+                  "x": 363.0,
+                  "y": 30.0
+                },
+                {
+                  "x": 364.0,
+                  "y": 54.0
+                },
+                {
+                  "x": 237.0,
+                  "y": 56.0
+                }
+              ]
+            },
+            "inferText": "자동차운전면허증",
+            "inferConfidence": 0.9997,
+            "lineBreak": false
+          }
+        ]
+      }
+    }
+  ]
+}
+인증 요청: name=홍길순, driver_license=21-19-174133-01, ssn=000829-2134567, user_id=user_c3b5daed
+DB 조회 결과: {'USER_ID': 'user_c3b5daed', 'name': '홍길순', 'driver_license_number': '21-19-174133-01', 'personal_number': '000829-2134567'}
+실시간 로그 수신: user_id=user_c3b5daed, device_code=1250928014
+위치: lat=37.3320635, lng=126.8067376
+시간: 2025-12-02 16:08:54
+비정상적인 시간 차이 감지: 62365.3분 - 배터리 소모 계산 건너뜀
+실시간 로그 저장 완료: 2025-12-02 16:08:54
+대여 종료 요청 받음: user_id=user_c3b5daed, device_code=1250928014
+요청 데이터: {'user_id': 'user_c3b5daed', 'device_code': '1250928014', 'end_latitude': 37.3320561, 'end_longitude': 126.8067382}
+종료 위치: lat=37.3320561, lng=126.8067382
+대여 기록 찾음: start_time=2025-12-02 16:08:39
+사용 시간: 0분 35초
+계산된 요금: 400원
+device_realtime_log 마지막 위치 사용: lat=37.3320561, lng=126.8067382
+시작 위치: lat=37.33368159168543, lng=126.80855641635111
+종료 위치: lat=37.3320561, lng=126.8067382
+거리 계산 입력: lat1=37.33368159168543, lon1=126.80855641635111, lat2=37.3320561, lon2=126.8067382
+라디안 변환: lat1_rad=0.651596, lon1_rad=2.213227, lat2_rad=0.651567, lon2_rad=2.213195
+차이: dlat=-0.000028, dlon=-0.000032
+중간값: a=0.000000
+중간값: c=0.000038
+거리 계산 결과: 0.241892km
+이동 거리: 0.24km
+device_use_log 테이블 업데이트 시도...
+device_use_log 업데이트 결과: 1개 행이 업데이트됨
+기기 상태 업데이트 시도: device_code=1250928014
+업데이트 전 device_info.location: {'lng': 37.33368159168543, 'lat': 126.80855641635111}
+기기 상태 업데이트 결과: 1개 행이 업데이트됨
+업데이트 후 device_info.location: {'lng': 37.3320561, 'lat': 126.8067382}
+device_use_log.end_loc: {'lng': 37.3320561, 'lat': 126.8067382}

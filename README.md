@@ -19,3 +19,7 @@
 
 ### 웹 서버 재시작
 kill -HUP 191226
+
+###  시뮬레이터 실행
+source venv/bin/activate
+python simulator.py
